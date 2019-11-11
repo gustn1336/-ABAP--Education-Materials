@@ -1,0 +1,46 @@
+*&---------------------------------------------------------------------*
+*& Include          SAPMZEDU20_01_O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE STATUS_0100 OUTPUT.
+ SET PF-STATUS 'PF_0100'.
+ SET TITLEBAR 'T_0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CREATE_LISTBOX_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE CREATE_LISTBOX_0100 OUTPUT.
+
+  DATA: LT_LIST  TYPE VRM_VALUES,
+        LS_VALUE TYPE VRM_VALUE.
+
+  CLEAR LT_LIST[].
+  LS_VALUE-KEY = 'X'.
+  LS_VALUE-TEXT = 'Åð»ç'.
+  APPEND LS_VALUE TO LT_LIST.
+  LS_VALUE-KEY = SPACE.
+  LS_VALUE-TEXT = 'ÀçÁ÷'.
+  APPEND LS_VALUE TO LT_LIST.
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      ID     = 'GV_OUT'
+      VALUES = LT_LIST
+*   EXCEPTIONS
+*     ID_ILLEGAL_NAME       = 1
+*     OTHERS = 2
+    .
+  IF SY-SUBRC <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+ENDMODULE.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

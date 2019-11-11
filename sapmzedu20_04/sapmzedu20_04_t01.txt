@@ -1,0 +1,35 @@
+*&---------------------------------------------------------------------*
+*& Include          SAPMZEDU20_04_T01
+*&---------------------------------------------------------------------*
+
+TABLES: SFLIGHT.
+
+TYPE-POOLS: VRM.
+
+DATA: GV_CNT   TYPE I,
+      GV_ERROR TYPE C,
+      GV_FLAG TYPE C,
+      GV_FLAG2 TYPE C.
+
+DATA: GV_ANSWER TYPE C,
+      GV_CHANGE TYPE C,
+      OK_CODE   TYPE SY-UCOMM, "예외
+      SAVE_OK   TYPE SY-UCOMM. "예외
+
+DATA: GV_SNAME TYPE SY-DYNNR.
+
+DATA: GS_DATA TYPE SFLIGHT,
+      GT_DATA TYPE TABLE OF SFLIGHT.
+
+CONTROLS ZTB_CONT TYPE TABLEVIEW USING SCREEN 0100.
+
+SELECTION-SCREEN: BEGIN OF SCREEN 110 AS SUBSCREEN. "서브 스크린처럼 사용 가능
+
+  SELECT-OPTIONS: S_CARRID  FOR SFLIGHT-CARRID.
+  SELECT-OPTIONS: S_CONNID  FOR SFLIGHT-CONNID.
+  SELECT-OPTIONS: S_FLDATE  FOR SFLIGHT-FLDATE.
+
+  SELECTION-SCREEN END OF SCREEN 110.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

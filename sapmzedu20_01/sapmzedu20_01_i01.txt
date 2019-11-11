@@ -1,0 +1,124 @@
+*&---------------------------------------------------------------------*
+*& Include          SAPMZEDU20_01_I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE EXIT INPUT.
+
+*-- OK_CODE ACTIONS.
+  CASE OK_CODE.
+    WHEN 'CANC'.
+      LEAVE TO SCREEN 0. "원래 있던 스크린에서 전 스크린으로 가라는 얘기
+
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+
+    WHEN OTHERS.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0100 INPUT.
+
+  CLEAR: SAVE_OK.
+
+  "-- move ok code.
+  SAVE_OK = OK_CODE.
+  CLEAR: OK_CODE.
+
+*-- SAVE_OK ACTIONS.
+  CASE SAVE_OK.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+
+   WHEN 'CREA' or '&CREA'. "생성
+     PERFORM CHECK_COND.
+       CHECK GV_ERROR IS INITIAL.
+
+     PERFORM CREATE_DATA.
+
+   WHEN 'CHAG' or '&CHAG'. "수정
+     PERFORM CHECK_COND.
+       CHECK GV_ERROR IS INITIAL.
+
+     PERFORM CHANGE_DATA.
+
+   WHEN 'DELE' or '&DELE'. "삭제
+          PERFORM CHECK_COND.
+       CHECK GV_ERROR IS INITIAL.
+
+     PERFORM DELETE_DATA.
+
+   WHEN 'DISP' or '&DISP'. "조회
+          PERFORM CHECK_COND.
+       CHECK GV_ERROR IS INITIAL.
+
+     PERFORM SELECT_DATA.
+
+    WHEN OTHERS.
+  ENDCASE.
+
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  CREATE_LISTBOX  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE CREATE_LISTBOX INPUT.
+
+  DATA: LT_RETURN TYPE TABLE OF DDSHRETVAL WITH HEADER LINE.
+
+  DATA : BEGIN OF LT_POPUP OCCURS 0,  ""팝업의 데이타를 가지고 있을 테이블
+           DATAS(20) TYPE C,
+  END OF LT_POPUP.
+  DATA : LT_FIELD LIKE TABLE OF DFIES WITH HEADER LINE.
+  DATA : LT_MAP   LIKE TABLE OF DSELC WITH HEADER LINE.
+DATA : LT_UPDATE LIKE TABLE OF DYNPREAD WITH HEADER LINE.
+
+  CLEAR: GT_EMPNO[], GT_EMPNO.
+  SELECT *
+    INTO CORRESPONDING FIELDS OF TABLE GT_EMPNO
+    FROM ZEDU20_EX6TA.
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      RETFIELD   = 'EMP_NO' " GT_EMPNO 테이블에서 리턴되는 필드
+      VALUE_ORG  = 'S'
+    TABLES
+      VALUE_TAB  = GT_EMPNO "보여줄 테이블.
+*     FIELD_TAB  =
+      RETURN_TAB = LT_RETURN. "리턴되는 테이블
+
+  READ TABLE LT_RETURN INDEX 1. "하나만 가져오기 때문에 인덱스 1값을 들고옴.
+  GS_DATA-EMP_NO = LT_RETURN-FIELDVAL.
+
+READ TABLE GT_EMPNO WITH KEY EMP_NO = GS_DATA-EMP_NO.
+  GS_DATA-EMP_NAME = GT_EMPNO-EMP_NAME.     "이 상태에서는 값이 들어가지만 화면에 나오지 않음.
+                                                                      " AFTER INPUT 이기 때문.
+  "가져온 데이타를 화면에 넣어준다.
+  LT_UPDATE-FIELDNAME   = 'GS_DATA-EMP_NAME'.   "업데이트를 할 테이블을 만들음.
+  LT_UPDATE-FIELDVALUE  = GS_DATA-EMP_NAME.
+  APPEND LT_UPDATE.
+
+  ""화면에 데이타를 기록한다.
+  CALL FUNCTION 'DYNP_VALUES_UPDATE'
+    EXPORTING
+      DYNAME     = SY-CPROG "현재 프로그램 이름
+      DYNUMB     = SY-DYNNR "현재 스크린 번호
+    TABLES
+      DYNPFIELDS = LT_UPDATE.                        "업데이트를 실제로 실행하는 것.
+
+
+
+ENDMODULE.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

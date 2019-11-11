@@ -1,0 +1,28 @@
+*&---------------------------------------------------------------------*
+*& 모듈풀              SAPMZEDU20_SD
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+PROGRAM SAPMZEDU20_SD MESSAGE-ID ZMMMEDU20..
+
+
+INCLUDE SAPMZEDU20_SD_ALV.
+INCLUDE SAPMZEDU20_SD_T01. "TOP
+INCLUDE SAPMZEDU20_SD_O01. "PBO
+INCLUDE SAPMZEDU20_SD_SCR.
+INCLUDE SAPMZEDU20_SD_I01. "PAi
+INCLUDE SAPMZEDU20_SD_F01. "FUNCTION
+
+*GUI Texts
+*----------------------------------------------------------
+* T_0100 --> 학생정보/성적정보 조회
+
+
+*Messages
+*----------------------------------------------------------
+*
+* Message class:0K
+*000& & & &
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

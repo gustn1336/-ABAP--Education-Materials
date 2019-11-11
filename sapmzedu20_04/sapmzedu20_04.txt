@@ -1,0 +1,14 @@
+*&---------------------------------------------------------------------*
+*& ¸ðµâÇ®              SAPMZEDU20_04
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+PROGRAM SAPMZEDU20_04 MESSAGE-ID ZMMMEDU20.
+
+INCLUDE SAPMZEDU20_04_T01. "TOP
+INCLUDE SAPMZEDU20_04_O01. "PBO
+INCLUDE SAPMZEDU20_04_I01. "PAi
+INCLUDE SAPMZEDU20_04_F01. "FUNCTION
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

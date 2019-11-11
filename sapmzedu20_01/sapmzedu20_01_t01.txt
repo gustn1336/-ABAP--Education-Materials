@@ -1,0 +1,38 @@
+*&---------------------------------------------------------------------*
+*& Include          SAPMZEDU20_01_T01
+*&---------------------------------------------------------------------*
+TABLES : ZEDU20_EX6TA.
+
+TYPE-POOLS VRM. "리스트 박스를 만들기 위한 구조. 쓰겠다고 선언
+
+DATA: GV_CNT TYPE I,
+          GV_ERROR TYPE C.
+
+DATA: GV_ANSWER TYPE C,
+          GV_CHANGE TYPE C,
+          OK_CODE TYPE SY-UCOMM,
+          SAVE_OK TYPE SY-UCOMM.
+
+DATA: GV_OUT.
+
+DATA: BEGIN OF GS_DATA,
+        EMP_NO    LIKE ZEDU20_EX6TA-EMP_NO,
+        EMP_NAME LIKE ZEDU20_EX6TA-EMP_NAME,
+        EMP_DEPRT LIKE  ZEDU20_EX6TA-EMP_DEPRT,
+        GENDER LIKE  ZEDU20_EX6TA-GENDER,
+        E_MAIL LIKE  ZEDU20_EX6TA-E_MAIL,
+        PHONE LIKE  ZEDU20_EX6TA-PHONE,
+        BIRTH LIKE  ZEDU20_EX6TA-BIRTH,
+        INDATE LIKE  ZEDU20_EX6TA-INDATE,
+      END OF GS_DATA.
+
+"DATA: GS_DATA LIKE ZEDU20_EX6TA.
+DATA: GT_DATA LIKE TABLE OF ZEDU20_EX6TA WITH HEADER LINE.
+
+DATA: BEGIN OF GT_EMPNO OCCURS 0,
+        EMP_NO   LIKE ZEDU00_EX6TA-EMP_NO,
+        EMP_NAME LIKE ZEDU00_EX6TA-EMP_NAME,
+      END OF GT_EMPNO .
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

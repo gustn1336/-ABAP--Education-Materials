@@ -1,0 +1,50 @@
+*&---------------------------------------------------------------------*
+*& Include          SAPMZEDU20_04_O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE STATUS_0100 OUTPUT.
+* SET PF-STATUS 'xxxxxxxx'.
+* SET TITLEBAR 'xxx'.
+
+ IF GV_SNAME IS INITIAL.
+   GV_SNAME = '110'.
+   ENDIF.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module GET_SFIGHT OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE GET_SFIGHT OUTPUT.
+IF GV_FLAG IS  not INITIAL.
+    EXIT.
+  ENDIF.
+
+CLEAR : GT_DATA.
+
+*SELECT *
+*  INTO CORRESPONDING FIELDS OF TABLE GT_DATA
+*  FROM SFLIGHT
+*  WHERE CARRID EQ 'AA'.
+*
+*DESCRIBE TABLE GT_DATA LINES ZTB_CONT-LINES. "스크롤을 만들어 줌
+
+  GV_FLAG = 'X'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module FILL_DATA OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE FILL_DATA OUTPUT.
+  READ TABLE GT_DATA INTO GS_DATA
+                   INDEX ZTB_CONT-CURRENT_LINE. "1번부터 14번까지
+ENDMODULE.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

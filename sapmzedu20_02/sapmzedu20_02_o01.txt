@@ -1,0 +1,80 @@
+*&---------------------------------------------------------------------*
+*& Include          SAPMZEDU20_02_O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE STATUS_0100 OUTPUT.
+   IF GV_FLAG2 IS  INITIAL.
+    SET PF-STATUS 'PF_0100'.
+ SET TITLEBAR 'T_0100'.
+ GV_FLAG2 = 'X'.
+  ELSE.
+     SET PF-STATUS 'PF_0100'.
+ SET TITLEBAR 'T_0101'.
+ENDIF.
+
+
+
+
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module GET_SFIGHT OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE GET_SFIGHT OUTPUT.
+
+  IF GV_FLAG IS  not INITIAL.
+    EXIT.
+  ENDIF.
+
+CLEAR : GT_DATA.
+
+SELECT *
+  INTO CORRESPONDING FIELDS OF TABLE GT_DATA
+  FROM SFLIGHT
+  WHERE CARRID EQ 'AA'.
+
+DESCRIBE TABLE GT_DATA LINES ZTB_CONT-LINES. "스크롤을 만들어 줌
+
+  GV_FLAG = 'X'.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module FILL_DATA OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE FILL_DATA OUTPUT. "값이 채워지는 모듈. 테이블에 데이터들을 찍어줌.
+  READ TABLE GT_DATA INTO GS_DATA
+                   INDEX ZTB_CONT-CURRENT_LINE. "1번부터 14번까지
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module MODIFY_COLUMN OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE MODIFY_COLUMN OUTPUT.
+
+  LOOP AT SCREEN. "  "루프 엣 스크린 - 스크린의 구성요소를 하나하나 돌면서 체킹
+    IF SCREEN-NAME = 'GS_DATA-PLANETYPE'.
+    IF GS_DATA-PLANETYPE = '747-400'.
+        SCREEN-INPUT = 0. "입력을 막아준다는 것. FALSE값
+        MODIFY SCREEN.
+      ELSEIF GS_DATA-PLANETYPE = 'A340-600'.
+        SCREEN-INTENSIFIED = '1'. "강조하다
+        MODIFY SCREEN.
+      ENDIF.
+    ENDIF.
+  ENDLOOP.
+
+"유동적으로 옵션을 줄 수 있는 모듈
+
+ENDMODULE.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

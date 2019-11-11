@@ -1,0 +1,139 @@
+*&---------------------------------------------------------------------*
+*& Include          SAPMZEDU20_01_F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form SELECT_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+FORM SELECT_DATA .
+
+SELECT SINGLE *
+  INTO CORRESPONDING FIELDS OF GS_DATA "gs로 들어가서 모두 볼 수 있음.
+  FROM ZEDU20_EX6TA
+  WHERE EMP_NO EQ GS_DATA-EMP_NO.
+
+  IF SY-SUBRC NE 0.
+    GV_ERROR = 0.
+    MESSAGE S001 DISPLAY LIKE 'E'.
+    ELSE.
+      MESSAGE S006.
+ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CREATE_DATA .
+  CLEAR GV_ERROR.
+  DATA: LV_EMPNO TYPE ZEDU20_EX6TA-EMP_NO.
+  DATA : LS_ZEDU20_EX6TA TYPE ZEDU20_EX6TA.
+
+
+"데이터 있는지 체크
+        SELECT SINGLE EMP_NO
+          INTO LV_EMPNO
+          FROM ZEDU20_EX6TA
+          WHERE EMP_NO EQ GS_DATA-EMP_NO.
+
+          IF SY-SUBRC EQ 0.
+            GV_ERROR = 'X'.
+            MESSAGE S000 WITH TEXT-E01 DISPLAY LIKE 'E'.
+            EXIT.
+            ENDIF.
+
+MOVE-CORRESPONDING GS_DATA TO LS_ZEDU20_EX6TA. "
+  INSERT ZEDU20_EX6TA FROM LS_ZEDU20_EX6TA. "인설트를 할때 데이ㅣ터 형식이 정확히 일치해야함. 그래서 테이블에 담고 인설트해줌.
+IF SY-SUBRC EQ 0.
+    MESSAGE S005.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHANGE_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CHANGE_DATA .
+CLEAR GV_ERROR.
+  DATA: LV_EMPNO TYPE ZEDU20_EX6TA-EMP_NO.
+    DATA : LS_ZEDU20_EX6TA TYPE ZEDU20_EX6TA.
+
+
+SELECT SINGLE EMP_NO
+  INTO LV_EMPNO
+  FROM ZEDU20_EX6TA
+  WHERE EMP_NO EQ GS_DATA-EMP_NO.
+  CLEAR GV_ERROR.
+
+  IF SY-SUBRC NE 0.
+    GV_ERROR = 'X'.
+    MESSAGE S001 DISPLAY LIKE 'E'.
+    EXIT.
+    ENDIF.
+
+    MOVE-CORRESPONDING GS_DATA TO LS_ZEDU20_EX6TA.
+    MODIFY ZEDU20_EX6TA FROM LS_ZEDU20_EX6TA.
+    IF SY-SUBRC EQ 0.
+    MESSAGE S005.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DELETE_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM DELETE_DATA .
+  DATA: LV_EMPNO TYPE ZEDU20_EX6TA-EMP_NO.
+
+  SELECT SINGLE EMP_NO
+    INTO LV_EMPNO
+    FROM ZEDU20_EX6TA
+   WHERE EMP_NO EQ GS_DATA-EMP_NO.
+
+  IF SY-SUBRC NE 0.
+    GV_ERROR = ABAP_TRUE.
+    MESSAGE S007 DISPLAY LIKE 'E'.
+    EXIT.
+  ENDIF.
+
+  DELETE FROM ZEDU20_EX6TA WHERE EMP_NO EQ GS_DATA-EMP_NO.
+  IF SY-SUBRC EQ 0.
+    MESSAGE S000 WITH TEXT-S01.
+    CLEAR: GS_DATA.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHECK_COND
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CHECK_COND .
+
+CLEAR : GV_ERROR.
+IF GS_DATA-EMP_NO IS INITIAL.
+  GV_ERROR = ABAP_TRUE.
+  MESSAGE S000 WITH TEXT-E02 DISPLAY LIKE 'E'.
+
+ENDIF.
+
+ENDFORM.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

@@ -1,0 +1,29 @@
+*&---------------------------------------------------------------------*
+*& Include          SAPMZEDU20_03_T01
+*&---------------------------------------------------------------------*
+TABLES : ZEDU20_EX8TA.
+
+DATA: GV_CNT TYPE I,
+          GV_ERROR TYPE C.
+
+DATA: GV_ANSWER TYPE C,
+          GV_CHANGE TYPE C,
+          OK_CODE TYPE SY-UCOMM,
+          SAVE_OK TYPE SY-UCOMM.
+
+DATA: GV_SNAME TYPE SY-DYNNR.
+
+
+
+SELECTION-SCREEN: BEGIN OF SCREEN 130 AS SUBSCREEN. "서브 스크린처럼 사용 가능
+
+  SELECT-OPTIONS: S_YEAR FOR ZEDU20_EX8TA-ZYEAR NO-EXTENSION NO INTERVALS.
+
+  SELECT-OPTIONS S_IMDATE FOR ZEDU20_EX8TA-IMDATE NO-EXTENSION.
+
+   SELECT-OPTIONS S_SNO FOR ZEDU20_EX8TA-SNO NO-EXTENSION MATCHCODE OBJECT ZEDU20_SNO.
+
+  SELECTION-SCREEN END OF SCREEN 130.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

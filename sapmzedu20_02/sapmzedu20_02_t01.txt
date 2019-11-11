@@ -1,0 +1,23 @@
+*&---------------------------------------------------------------------*
+*& Include          SAPMZEDU20_02_T01
+*&---------------------------------------------------------------------*
+
+TYPE-POOLS: VRM.
+
+DATA: GV_CNT   TYPE I,
+      GV_ERROR TYPE C,
+      GV_FLAG TYPE C,
+      GV_FLAG2 TYPE C.
+
+DATA: GV_ANSWER TYPE C,
+      GV_CHANGE TYPE C,
+      OK_CODE   TYPE SY-UCOMM, "예외
+      SAVE_OK   TYPE SY-UCOMM. "예외
+
+DATA: GS_DATA TYPE SFLIGHT,
+      GT_DATA TYPE TABLE OF SFLIGHT.
+
+CONTROLS ZTB_CONT TYPE TABLEVIEW USING SCREEN 0100.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

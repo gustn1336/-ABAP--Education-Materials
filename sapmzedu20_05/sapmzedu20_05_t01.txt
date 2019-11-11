@@ -1,0 +1,31 @@
+*&---------------------------------------------------------------------*
+*& Include          SAPMZEDU20_05_T01
+*&---------------------------------------------------------------------*
+
+DATA: GV_CNT   TYPE I,
+      GV_ERROR TYPE C.
+
+DATA: GV_ANSWER TYPE C,
+      GV_CHANGE TYPE C,
+      OK_CODE   TYPE SY-UCOMM, "예외
+      SAVE_OK   TYPE SY-UCOMM. "예외
+
+DATA: GV_FLAG TYPE C,
+      GV_SNR  TYPE SY-DYNNR.
+
+DATA: BEGIN OF GS_DATA,
+        CARRID    TYPE SFLIGHT-CARRID,
+        CONNID    TYPE SFLIGHT-CONNID,
+        FLDATE    TYPE SFLIGHT-FLDATE,
+        PRICE     TYPE SFLIGHT-PRICE,
+        CURRENCY  TYPE SFLIGHT-CURRENCY,
+        PLANETYPE TYPE SFLIGHT-PLANETYPE,
+        SEATSMAX  TYPE SFLIGHT-SEATSMAX,
+        SEATSOCC  TYPE SFLIGHT-SEATSOCC,
+      END OF GS_DATA.
+DATA: GT_DATA LIKE TABLE OF GS_DATA.
+
+CONTROLS: TAB_ST TYPE TABSTRIP. "탭 선언
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753
