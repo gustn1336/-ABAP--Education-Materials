@@ -1,0 +1,958 @@
+*&---------------------------------------------------------------------*
+*& Include          ZEDU20_29F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form INIT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM INIT .
+       DATA: LV_TODAY TYPE SY-DATUM,
+                 LV_FDATE TYPE SY-DATUM,
+                 LV_TDATE TYPE SY-DATUM.
+
+       LV_TODAY = SY-DATUM. "현재일
+       P_CARRID = 'AA'.
+
+
+
+
+
+       "3개월전 계산
+       CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+         EXPORTING
+           DATE            = LV_TODAY
+           DAYS            = 0
+           MONTHS          = 3
+          SIGNUM          = '-' "3개월 뒤
+           YEARS           = 0
+        IMPORTING
+          CALC_DATE       = LV_FDATE.
+                 .
+       "이 달의 마지막 날 계산
+       CALL FUNCTION 'LAST_DAY_OF_MONTHS'
+         EXPORTING
+             DAY_IN                  = LV_TODAY
+             IMPORTING
+                LAST_DAY_OF_MONTH       = LV_TDATE
+                EXCEPTIONS
+                  DAY_IN_NO_DATE          = 1
+                     OTHERS                  = 2
+          .
+IF SY-SUBRC <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+         S_FLDATE-SIGN = 'I'.
+         S_FLDATE-OPTION = 'BT'.
+         CONCATENATE LV_FDATE(06) '01' INTO S_FLDATE-LOW. "2019 04 + 01
+         S_FLDATE-HIGH = LV_TDATE.
+         APPEND S_FLDATE.
+
+
+
+
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SELECT_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SELECT_DATA .
+
+   DATA: LV_MOD TYPE I.
+
+  SELECT A~CARRID,
+               A~CARRNAME,
+               B~CONNID,
+               B~FLDATE,
+               B~PRICE,           "금액 필드를 쓸려면 통화필드가 무조건 따라와야함. 프라이스가 커런시를 참조하기  때문
+               B~CURRENCY,
+               B~PLANETYPE,
+               B~SEATSMAX,
+               B~SEATSOCC,
+               B~PAYMENTSUM
+    INTO CORRESPONDING FIELDS OF TABLE @GT_DISPLAY
+    FROM SCARR  AS A INNER JOIN SFLIGHT AS B
+                             ON B~CARRID EQ A~CARRID
+ WHERE A~CARRID EQ @P_CARRID
+      AND B~CONNID IN @S_CONNID
+      AND B~FLDATE IN @S_FLDATE.
+
+
+  CLEAR GV_ERROR.
+  IF GT_DISPLAY[] IS INITIAL.
+    GV_ERROR = 'X'.
+    MESSAGE S001 DISPLAY LIKE 'E'.
+    EXIT.
+  ENDIF.
+
+LOOP AT GT_DISPLAY.
+
+    LV_MOD = SY-TABIX MOD 2.
+
+    IF LV_MOD EQ 0.
+      GT_DISPLAY-LCOLOR = 'C310'.
+    ELSE.
+      GT_DISPLAY-LCOLOR = 'C410'.
+    ENDIF.
+
+    MODIFY GT_DISPLAY.
+  ENDLOOP.
+
+
+    ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_INSTANCE_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CREATE_INSTANCE_0100 .
+
+  CREATE OBJECT GR_CON1
+    EXPORTING
+      CONTAINER_NAME = GV_CONTAINER. "USER가 정의한 CONTAINER
+
+  CREATE OBJECT GR_GRID1
+    EXPORTING
+      I_PARENT = GR_CON1.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form INIT_LAYOUT_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM INIT_LAYOUT_0100 .
+"필드캣이 상위 개념.
+
+  GS_LAYOUT-EDIT_MODE  = ABAP_TRUE. "편집모드
+  "GS_LAYOUT-ZEBRA      = ABAP_TRUE.  "줄무늬를 줌. 얼룩말
+  GS_LAYOUT-CWIDTH_OPT = ABAP_TRUE.  "최적화, 필드캣이랑 똑같음.
+  GS_LAYOUT-SEL_MODE   = 'A'.     "B:단일,C:복수,D:셀,A:행/열
+                                                  "B를 주면 단일라인씩 선택 가능
+                                                  "C 복수라인 선택가능, 스크롤
+ "                  D 한 셀단위로 선택 가능. 박스버튼이 생기고  라인을 선택하는 기능 생성
+                      "A 행과열 생김.
+  GS_LAYOUT-NO_ROWMARK = SPACE. "한줄 선택 없애주는 기능.
+ "SEL모드랑 로우마크랑 연관이 있음,
+
+  GS_LAYOUT-KEYHOT = 'X'. "키 필드 누를 수 있음
+  GS_LAYOUT-NO_HEADERS = SPACE. "페이지 245
+  GS_LAYOUT-INFO_FNAME = 'LCOLOR'.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_GRID_EXCLUDE_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SET_GRID_EXCLUDE_0100 .
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form APPEND_FIELDCAT_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM APPEND_FIELDCAT_0100 .
+
+  "-- field catalog data
+  "   field catalog merge or set fieldcatalog를 사용할 수 있음.
+
+  "{ FIELDCATLOG MERGE 사용
+  PERFORM GET_FIELDCATLOG_DATA.
+
+  PERFORM MODIFY_FIELDCATLOG_DATA.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_ALV_GRID_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM DISPLAY_ALV_GRID_0100 .
+
+GS_VARIANT-REPORT = SY-REPID.
+
+  GV_SAVE = 'A'.
+
+  "*-- Build field catalog for the alv control
+  CALL METHOD GR_GRID1->SET_TABLE_FOR_FIRST_DISPLAY
+    EXPORTING
+      I_DEFAULT                     = ABAP_TRUE
+      IS_LAYOUT                     = GS_LAYOUT
+      IS_VARIANT                    = GS_VARIANT
+      I_SAVE                        = GV_SAVE
+      IT_TOOLBAR_EXCLUDING          = GT_EXCLUDE
+    CHANGING
+      IT_FIELDCATALOG               = GT_FIELDCAT
+      IT_SORT                       = GT_SORT
+      IT_OUTTAB                     = GT_DISPLAY[]
+    EXCEPTIONS
+      INVALID_PARAMETER_COMBINATION = 1
+      PROGRAM_ERROR                 = 2
+      TOO_MANY_LINES                = 3.
+
+  IF SY-SUBRC NE 0.
+    MESSAGE E000(0K) WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form REFRESH_GRID_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM REFRESH_GRID_0100 .
+
+  GS_STABLE-ROW = ABAP_TRUE. "Row
+  GS_STABLE-COL = ABAP_TRUE. "column             "행 열을 쓰겠다.
+
+  CALL METHOD GR_GRID1->REFRESH_TABLE_DISPLAY
+    EXPORTING
+      IS_STABLE      = GS_STABLE
+      I_SOFT_REFRESH = SPACE. "촤라락
+
+  CALL METHOD CL_GUI_CFW=>FLUSH.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_FIELDCATLOG_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM GET_FIELDCATLOG_DATA .
+
+DATA: LT_FIELDCAT TYPE KKBLO_T_FIELDCAT.
+  DATA: LV_TABNAME  TYPE DD02L-TABNAME.
+
+  LV_TABNAME = 'GT_DISPLAY'.
+
+  CALL FUNCTION 'K_KKB_FIELDCAT_MERGE'
+    EXPORTING
+      I_CALLBACK_PROGRAM     = SY-REPID
+      I_TABNAME              = LV_TABNAME "프로그램내 ITAB
+*     I_STRUCNAME            = 'ZEDU00_EX5ST_1' "ABAP DIC. 정의된 STRUCTURE
+      I_BYPASSING_BUFFER     = ABAP_TRUE
+      I_INCLNAME             = SY-REPID
+    CHANGING
+      CT_FIELDCAT            = LT_FIELDCAT[]
+    EXCEPTIONS
+      INCONSISTENT_INTERFACE = 1
+      OTHERS                 = 2.
+
+  IF SY-SUBRC EQ 0.
+
+    "-- Trasnfer LVC.
+    CALL FUNCTION 'LVC_TRANSFER_FROM_KKBLO'
+      EXPORTING
+        IT_FIELDCAT_KKBLO = LT_FIELDCAT[]
+      IMPORTING
+        ET_FIELDCAT_LVC   = GT_FIELDCAT[]
+      EXCEPTIONS
+        IT_DATA_MISSING   = 1.
+  ELSE.
+
+    " Error Fieldcatalog merge!!
+    MESSAGE E000 WITH 'Error Fieldcatalog merge!!'.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form MODIFY_FIELDCATLOG_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM MODIFY_FIELDCATLOG_DATA .
+
+*DATA:  LV_TEXT(50).
+*
+*  "--- Change Fieldcat.
+*  LOOP AT GT_FIELDCAT INTO GS_FIELDCAT.
+*    CLEAR: LV_TEXT.
+*
+*    "-- Change fieldcat Attribute
+*    CASE GS_FIELDCAT-FIELDNAME.
+*      WHEN 'ZYEAR'.
+*        LV_TEXT = '입학년도'.
+*        GS_FIELDCAT-JUST = 'C'.
+*
+*      WHEN 'SNO'.
+*        LV_TEXT = '학 번'.
+*        GS_FIELDCAT-JUST = 'R'.
+*
+*      WHEN 'IMDATE'.
+*        LV_TEXT = '입학일'.
+*        GS_FIELDCAT-KEY = ABAP_TRUE. " 'X''
+*        GS_FIELDCAT-JUST = 'L'.
+*
+*      WHEN 'SNAME'.
+*        LV_TEXT = '학생이름'.
+*        GS_FIELDCAT-HOTSPOT = 'X'.
+*        GS_FIELDCAT-EMPHASIZE = 'C600'.
+*
+*      WHEN OTHERS.
+*        GS_FIELDCAT-NO_OUT = ABAP_TRUE.
+*    ENDCASE.
+*    "Column Optimizer
+*    GS_FIELDCAT-COL_OPT = ABAP_TRUE.
+*
+*    "-- Common attribute
+*    IF LV_TEXT IS NOT INITIAL.
+*      GS_FIELDCAT-COLTEXT   = LV_TEXT.
+*      GS_FIELDCAT-SCRTEXT_L = LV_TEXT.
+*      GS_FIELDCAT-SCRTEXT_M = LV_TEXT.
+*      GS_FIELDCAT-SCRTEXT_S = LV_TEXT.
+*    ENDIF.
+*
+*    MODIFY GT_FIELDCAT FROM GS_FIELDCAT.
+*  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_SORT_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ALV_SORT_0100 .
+
+*  CLEAR: GS_SORT, GT_SORT.
+*  GS_SORT-SPOS = '1'.
+*  GS_SORT-FIELDNAME = 'CARRID'.
+*  GS_SORT-UP = 'X'. "오른차수
+*  APPEND GS_SORT TO GT_SORT.
+*
+*  GS_SORT-SPOS = '2'.
+*  GS_SORT-FIELDNAME = 'CONNID'.
+*  GS_SORT-UP = 'X'.
+*  APPEND GS_SORT TO GT_SORT.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_BOOKINFO
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM GET_BOOKINFO .
+
+LOOP AT GT_ROWS INTO GS_ROWS.
+    READ TABLE GT_DISPLAY INDEX GS_ROWS-INDEX.    "헤더라인에 넣음.
+    IF SY-SUBRC EQ 0.
+      CLEAR: GT_BOOK, GT_BOOK[].
+
+      SELECT *
+        INTO CORRESPONDING FIELDS OF TABLE @GT_BOOK
+        FROM SBOOK
+       WHERE CARRID EQ @GT_DISPLAY-CARRID
+            AND CONNID EQ @GT_DISPLAY-CONNID
+            AND FLDATE EQ @GT_DISPLAY-FLDATE.
+
+    ENDIF.
+  ENDLOOP.
+
+  IF GT_BOOK[] IS INITIAL.
+    GV_ERROR = 'X'.
+    MESSAGE S001 DISPLAY LIKE 'E'.
+    EXIT.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHECK_SELECT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CHECK_SELECT .
+
+  CALL METHOD GR_GRID1->GET_SELECTED_ROWS
+    IMPORTING
+      ET_INDEX_ROWS = GT_ROWS. "선택된 ROW들을 가져옴.
+
+  DESCRIBE TABLE GT_ROWS LINES SY-TFILL.
+
+CLEAR : GV_ERROR.
+
+  IF SY-TFILL = 0.
+    GV_ERROR = 'X'.
+    MESSAGE S000 WITH TEXT-E02 DISPLAY LIKE 'E'.
+    EXIT.
+  ENDIF.
+
+  IF SY-TFILL > 1.
+    GV_ERROR = 'X'.
+    MESSAGE S000 WITH TEXT-E01 DISPLAY LIKE 'E'.
+    EXIT.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_INSTANCE_0200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CREATE_INSTANCE_0200 .
+
+  CREATE OBJECT GR_CON2
+    EXPORTING
+      CONTAINER_NAME = GV_CONTAINER2. "USER가 정의한 CONTAINER
+
+  CREATE OBJECT GR_GRID2
+    EXPORTING
+      I_PARENT = GR_CON2.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form INIT_LAYOUT_0200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM INIT_LAYOUT_0200 .
+
+  GS_LAYOUT-EDIT_MODE  = ABAP_TRUE. "편집모드
+  "GS_LAYOUT-ZEBRA      = ABAP_TRUE.  "줄무늬를 줌. 얼룩말
+  GS_LAYOUT-CWIDTH_OPT = ABAP_TRUE.  "최적화, 필드캣이랑 똑같음.
+  GS_LAYOUT-SEL_MODE   = 'A'.     "B:단일,C:복수,D:셀,A:행/열
+                                                  "B를 주면 단일라인씩 선택 가능
+                                                  "C 복수라인 선택가능, 스크롤
+ "                  D 한 셀단위로 선택 가능. 박스버튼이 생기고  라인을 선택하는 기능 생성
+                      "A 행과열 생김.
+  GS_LAYOUT-NO_ROWMARK = SPACE. "한줄 선택 없애주는 기능.
+ "SEL모드랑 로우마크랑 연관이 있음,
+
+  GS_LAYOUT-KEYHOT = 'X'. "키 필드 누를 수 있음
+  GS_LAYOUT-NO_HEADERS = SPACE. "페이지 245
+  GS_LAYOUT-INFO_FNAME = 'LCOLOR'.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_GRID_EXCLUDE_0200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SET_GRID_EXCLUDE_0200 .
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form APPEND_FIELDCAT_0200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM APPEND_FIELDCAT_0200 .
+
+  "-- field catalog data
+  "   field catalog merge or set fieldcatalog를 사용할 수 있음.
+
+  "{ FIELDCATLOG MERGE 사용
+  PERFORM GET_FIELDCATLOG_DATA2.
+
+  PERFORM MODIFY_FIELDCATLOG_DATA2.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_ALV_GRID_0200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM DISPLAY_ALV_GRID_0200 .
+
+GS_VARIANT-REPORT = SY-REPID.
+
+  GV_SAVE = 'A'.
+
+  "*-- Build field catalog for the alv control
+  CALL METHOD GR_GRID2->SET_TABLE_FOR_FIRST_DISPLAY
+    EXPORTING
+      I_DEFAULT                     = ABAP_TRUE
+      IS_LAYOUT                     = GS_LAYOUT
+      IS_VARIANT                    = GS_VARIANT
+      I_SAVE                        = GV_SAVE
+      IT_TOOLBAR_EXCLUDING          = GT_EXCLUDE
+    CHANGING
+      IT_FIELDCATALOG               = GT_FIELDCAT2
+      IT_SORT                       = GT_SORT
+      IT_OUTTAB                     = GT_BOOK[]
+    EXCEPTIONS
+      INVALID_PARAMETER_COMBINATION = 1
+      PROGRAM_ERROR                 = 2
+      TOO_MANY_LINES                = 3.
+
+  IF SY-SUBRC NE 0.
+    MESSAGE E000(0K) WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form REFRESH_GRID_0200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM REFRESH_GRID_0200 .
+
+  GS_STABLE-ROW = ABAP_TRUE. "Row
+  GS_STABLE-COL = ABAP_TRUE. "column
+
+  CALL METHOD GR_GRID1->REFRESH_TABLE_DISPLAY
+    EXPORTING
+      IS_STABLE      = GS_STABLE
+      I_SOFT_REFRESH = SPACE.
+
+  CALL METHOD CL_GUI_CFW=>FLUSH.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_FIELDCATLOG_DATA2
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM GET_FIELDCATLOG_DATA2 .
+
+DATA: LT_FIELDCAT TYPE KKBLO_T_FIELDCAT.
+  DATA: LV_TABNAME  TYPE DD02L-TABNAME.
+
+  "LV_TABNAME = 'GT_BOOK'.
+
+  CALL FUNCTION 'K_KKB_FIELDCAT_MERGE'
+    EXPORTING
+      I_CALLBACK_PROGRAM     = SY-REPID
+    "  I_TABNAME              = LV_TABNAME "프로그램내 ITAB
+     I_STRUCNAME            = 'ZEDU20_BOOKST' ""ABAP DIC. 정의된 STRUCTURE
+      I_BYPASSING_BUFFER     = ABAP_TRUE
+      I_INCLNAME             = SY-REPID
+    CHANGING
+      CT_FIELDCAT            = LT_FIELDCAT[]
+    EXCEPTIONS
+      INCONSISTENT_INTERFACE = 1
+      OTHERS                 = 2.
+
+  IF SY-SUBRC EQ 0.
+
+    "-- Trasnfer LVC.
+    CALL FUNCTION 'LVC_TRANSFER_FROM_KKBLO'
+      EXPORTING
+        IT_FIELDCAT_KKBLO = LT_FIELDCAT[]
+      IMPORTING
+        ET_FIELDCAT_LVC   = GT_FIELDCAT2[]
+      EXCEPTIONS
+        IT_DATA_MISSING   = 1.
+  ELSE.
+
+    " Error Fieldcatalog merge!!
+    MESSAGE E000 WITH 'Error Fieldcatalog merge!!'.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form MODIFY_FIELDCATLOG_DATA2
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM MODIFY_FIELDCATLOG_DATA2 .
+
+*DATA:  LV_TEXT(50).
+*
+*  "--- Change Fieldcat.
+*  LOOP AT GT_FIELDCAT INTO GS_FIELDCAT.
+*    CLEAR: LV_TEXT.
+*
+*    "-- Change fieldcat Attribute
+*    CASE GS_FIELDCAT-FIELDNAME.
+*      WHEN 'ZYEAR'.
+*        LV_TEXT = '입학년도'.
+*        GS_FIELDCAT-JUST = 'C'.
+*
+*      WHEN 'SNO'.
+*        LV_TEXT = '학 번'.
+*        GS_FIELDCAT-JUST = 'R'.
+*
+*      WHEN 'IMDATE'.
+*        LV_TEXT = '입학일'.
+*        GS_FIELDCAT-KEY = ABAP_TRUE. " 'X''
+*        GS_FIELDCAT-JUST = 'L'.
+*
+*      WHEN 'SNAME'.
+*        LV_TEXT = '학생이름'.
+*        GS_FIELDCAT-HOTSPOT = 'X'.
+*        GS_FIELDCAT-EMPHASIZE = 'C600'.
+*
+*      WHEN OTHERS.
+*        GS_FIELDCAT-NO_OUT = ABAP_TRUE.
+*    ENDCASE.
+*    "Column Optimizer
+*    GS_FIELDCAT-COL_OPT = ABAP_TRUE.
+*
+*    "-- Common attribute
+*    IF LV_TEXT IS NOT INITIAL.
+*      GS_FIELDCAT-COLTEXT   = LV_TEXT.
+*      GS_FIELDCAT-SCRTEXT_L = LV_TEXT.
+*      GS_FIELDCAT-SCRTEXT_M = LV_TEXT.
+*      GS_FIELDCAT-SCRTEXT_S = LV_TEXT.
+*    ENDIF.
+*
+*    MODIFY GT_FIELDCAT FROM GS_FIELDCAT.
+*  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EVENT_DOUBLE_CLICK
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> E_ROW
+*&      --> E_COLUMN
+*&      --> ES_ROW_NO
+*&      --> SENDER
+*&---------------------------------------------------------------------*
+FORM EVENT_DOUBLE_CLICK  USING   PS_ROW TYPE LVC_S_ROW "인덱스 번호
+                                                              PS_COLUMN TYPE LVC_S_COL " 누른 컬럼이름.
+                                                              PS_ROW_NO TYPE LVC_S_ROID "
+                                                              PR_SENDER TYPE REF TO CL_GUI_ALV_GRID. "그리드를 가져옴
+
+
+
+* - Prefix - Form Parameter
+*   1. PT_  : Internal Table or Ranges
+*   2. PS_  : Structure
+*   3. PV_  : Variables
+*   4. PR_ : Reference Variables
+
+  CASE PR_SENDER.
+    WHEN GR_GRID1. "SENDER랑 비교한 것.
+      CASE PS_COLUMN-FIELDNAME. "필드네임을 받음.
+        WHEN 'CARRID'.
+
+
+          READ TABLE GT_DISPLAY INDEX PS_ROW_NO-ROW_ID.
+          IF SY-SUBRC EQ 0.
+            CLEAR: GT_BOOK, GT_BOOK[].
+
+            SELECT *
+              INTO CORRESPONDING FIELDS OF TABLE @GT_BOOK
+              FROM SBOOK
+             WHERE CARRID EQ @GT_DISPLAY-CARRID
+                  AND CONNID EQ @GT_DISPLAY-CONNID
+                  AND FLDATE EQ @GT_DISPLAY-FLDATE.
+
+          ENDIF.
+
+          IF GT_BOOK[] IS INITIAL.
+            GV_ERROR = 'X'.
+            MESSAGE S001 DISPLAY LIKE 'E'.
+            EXIT.
+          ENDIF.
+
+          CALL SCREEN 200 STARTING AT 5 2.
+
+            WHEN 'CONNID'.
+
+
+          READ TABLE GT_DISPLAY INDEX PS_ROW_NO-ROW_ID.
+          IF SY-SUBRC EQ 0.
+            CLEAR: GT_BOOK, GT_BOOK[].
+
+            SELECT *
+              INTO CORRESPONDING FIELDS OF TABLE @GT_BOOK
+              FROM SBOOK
+             WHERE CARRID EQ @GT_DISPLAY-CARRID
+                  AND CONNID EQ @GT_DISPLAY-CONNID
+                  AND FLDATE EQ @GT_DISPLAY-FLDATE.
+
+          ENDIF.
+
+          IF GT_BOOK[] IS INITIAL.
+            GV_ERROR = 'X'.
+            MESSAGE S001 DISPLAY LIKE 'E'.
+            EXIT.
+          ENDIF.
+
+          CALL SCREEN 200 STARTING AT 5 2.
+
+      ENDCASE.
+  ENDCASE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form REGIST_ALV_EVENT_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> GR_GRID1
+*&---------------------------------------------------------------------*
+FORM REGIST_ALV_EVENT_0100  USING    PR_GRID TYPE REF TO CL_GUI_ALV_GRID.
+
+* REGISTER EVENT
+  CALL METHOD PR_GRID->REGISTER_EDIT_EVENT "이벤트를 등록한다. 실제로 그리드가 받음.
+    EXPORTING
+      I_EVENT_ID = CL_GUI_ALV_GRID=>MC_EVT_MODIFIED."이벤트를 받는 공간이 생김.
+
+*  CALL METHOD PR_GRID->SET_READY_FOR_INPUT
+*    EXPORTING
+*      I_READY_FOR_INPUT = 1.
+
+*-- GR_EVENT_RECEIVER
+  IF GR_EVENT_RECEIVER IS INITIAL. "우리가 만든 이벤트 리시버 생성됨, 그리드, 컨테이너같은 개념. 이벤트를 받아주는 곳.
+    CREATE OBJECT GR_EVENT_RECEIVER.
+  ENDIF.
+
+* Handler Event
+  SET HANDLER:
+   GR_EVENT_RECEIVER->HANDLE_TOOLBAR       FOR ALL INSTANCES,
+*    GR_EVENT_RECEIVER->HANDLE_DATA_CHANGED  FOR ALL INSTANCES,
+*    GR_EVENT_RECEIVER->HANDLE_DATA_CHANGED_FINISHED
+*      FOR ALL INSTANCES,
+    GR_EVENT_RECEIVER->HANDLE_USER_COMMAND  FOR ALL INSTANCES,
+   GR_EVENT_RECEIVER->HANDLE_HOTSPOT_CLICK FOR ALL INSTANCES,
+    GR_EVENT_RECEIVER->HANDLE_DOUBLE_CLICK  FOR PR_GRID. "이 이벤트를 쓰겠다. 새팅을 하는 모든 alv를 다 쓰겠다.
+                                                                                                                    " for PR_GRID 면 1번만 쓰겠다는 말.
+*    GR_EVENT_RECEIVER->HANDLE_ONF4          FOR ALL INSTANCES.
+
+*  PERFORM REGI_F4.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EVENT_HOTSPOT_CLICK
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> E_ROW_ID
+*&      --> E_COLUMN_ID
+*&      --> ES_ROW_NO
+*&      --> SENDER
+*&---------------------------------------------------------------------*
+FORM EVENT_HOTSPOT_CLICK  USING   PS_ROW TYPE LVC_S_ROW "인덱스 번호
+                                                              PS_COLUMN TYPE LVC_S_COL " 누른 컬럼이름.
+                                                              PS_ROW_NO TYPE LVC_S_ROID "
+                                                              PR_SENDER TYPE REF TO CL_GUI_ALV_GRID. "그리드를 가져옴
+
+
+
+* - Prefix - Form Parameter
+*   1. PT_  : Internal Table or Ranges
+*   2. PS_  : Structure
+*   3. PV_  : Variables
+*   4. PR_ : Reference Variables
+
+  CASE PR_SENDER.
+    WHEN GR_GRID1. "SENDER랑 비교한 것.
+      CASE PS_COLUMN-FIELDNAME. "필드네임을 받음.
+        WHEN 'FLDATE'.
+
+
+          READ TABLE GT_DISPLAY INDEX PS_ROW_NO-ROW_ID.
+          IF SY-SUBRC EQ 0.
+            CLEAR: GT_BOOK, GT_BOOK[].
+
+            SELECT *
+              INTO CORRESPONDING FIELDS OF TABLE @GT_BOOK
+              FROM SBOOK
+             WHERE CARRID EQ @GT_DISPLAY-CARRID
+                  AND CONNID EQ @GT_DISPLAY-CONNID
+                  AND FLDATE EQ @GT_DISPLAY-FLDATE.
+
+          ENDIF.
+
+          IF GT_BOOK[] IS INITIAL.
+            GV_ERROR = 'X'.
+            MESSAGE S001 DISPLAY LIKE 'E'.
+            EXIT.
+          ENDIF.
+
+          CALL SCREEN 200 STARTING AT 5 2.
+
+      ENDCASE.
+  ENDCASE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EVENT_TOOLBAR
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> E_OBJECT
+*&      --> E_INTERACTIVE
+*&      --> SENDER
+*&---------------------------------------------------------------------*
+FORM EVENT_TOOLBAR  USING
+                                        PR_OBJECT TYPE REF TO CL_ALV_EVENT_TOOLBAR_SET
+                                        PV_INTERACTIVE TYPE CHAR01
+                                        PR_SENDER TYPE REF TO CL_GUI_ALV_GRID.
+
+* - Prefix #¤## - Form Parameter
+*   1. PT_  : Internal Table or Ranges
+*   2. PS_  : Structure
+*   3. PV_  : Variables
+*   4. PR_ : Reference Variables
+
+* - BUTTON TYPE - BTYPE.
+*  0 버튼(일반)
+*  1 메뉴 및 기본 버튼
+*  2 메뉴
+*  3 분리자             버튼 사이에 있는 세로줄
+*  4 라디오 버튼
+*  5 체크박스
+*  6 메뉴 엔트리
+
+  CASE PR_SENDER.
+    WHEN GR_GRID1.
+
+      "ADD_BUTTON : OBJECT, BTYPE, FUNC, ICON, INFO, TEXT, DISABLE
+      PERFORM ADD_BUTTON
+      USING   :          PR_OBJECT '3' SPACE SPACE SPACE SPACE SPACE,
+            PR_OBJECT '0' '&INF' ICON_PREFERENCE '예약' '예약' SPACE.  "분리자
+       " &INF : canc같은 변수 이름.
+
+
+
+
+
+
+    WHEN OTHERS.
+  ENDCASE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ADD_BUTTON
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> PR_OBJECT
+*&      --> P_
+*&      --> P_
+*&      --> ICON_PREFERENCE
+*&      --> P_
+*&      --> P_
+*&      --> SPACE
+*&---------------------------------------------------------------------*
+FORM ADD_BUTTON  USING  PR_OBJECT TYPE REF TO CL_ALV_EVENT_TOOLBAR_SET
+                                               PV_BTYPE "버튼 타입
+                                               PV_FUNC
+                                               PV_ICON
+                                               PV_INFO
+                                               PV_TEXT
+                                               PV_DISA. "disable.
+
+  DATA: LS_BUTTON TYPE STB_BUTTON,
+        LS_BTNMNU TYPE STB_BTNMNU,
+
+        LT_BUTTON TYPE TTB_BUTTON,
+        LT_BTNMNU TYPE TTB_BTNMNU.
+
+  CLEAR LS_BUTTON.
+  LS_BUTTON-BUTN_TYPE = PV_BTYPE.
+  LS_BUTTON-FUNCTION = PV_FUNC.
+  LS_BUTTON-ICON = PV_ICON.
+  LS_BUTTON-QUICKINFO = PV_INFO.
+
+  LS_BUTTON-TEXT = PV_TEXT.
+  LS_BUTTON-DISABLED = PV_DISA.
+
+  APPEND LS_BUTTON TO PR_OBJECT->MT_TOOLBAR. "mt툴바는 실제로는 테이블임. 클래스에 감싸져있음.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EVENT_USER_COMMAND
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> E_UCOMM
+*&      --> SENDER
+*&---------------------------------------------------------------------*
+FORM EVENT_USER_COMMAND  USING  PV_UCOMM TYPE SY-UCOMM
+                                                                PR_SENDER TYPE REF TO CL_GUI_ALV_GRID.
+
+
+* - PREFIX 정의 - FORM PARAMETER
+*   1. PT_  : Internal Table or Ranges
+*   2. PS_  : Structure
+*   3. PV_  : Variables
+*   4. PR_  : Reference Variables
+
+  "GRID에 따라 처리.
+  CASE PR_SENDER.
+    WHEN GR_GRID1.
+      CASE PV_UCOMM.     "추가로 만든 툴바들의 값들이 들어옴
+        WHEN '&INF'.   "--
+
+  PERFORM CHECK_SELECT.
+     CHECK GV_ERROR IS INITIAL.
+
+     PERFORM GET_BOOKINFO.
+     CHECK GV_ERROR IS INITIAL.
+
+     CALL SCREEN 200 STARTING AT 5 2.
+
+      ENDCASE.
+    WHEN OTHERS.
+  ENDCASE.
+ENDFORM.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

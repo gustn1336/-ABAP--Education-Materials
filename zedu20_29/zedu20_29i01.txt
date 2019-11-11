@@ -1,0 +1,95 @@
+*&---------------------------------------------------------------------*
+*& Include          ZEDU20_29I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE EXIT INPUT.
+
+
+*-- OK_CODE ACTIONS.
+  CASE OK_CODE.
+    WHEN 'CANC'.
+      LEAVE TO SCREEN 0. "원래 있던 스크린에서 전 스크린으로 가라는 얘기
+
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+
+    WHEN OTHERS.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0100 INPUT.
+
+CLEAR: SAVE_OK.
+
+  "-- move ok code.
+  SAVE_OK = OK_CODE.
+  CLEAR: OK_CODE.
+
+*-- SAVE_OK ACTIONS.
+  CASE SAVE_OK.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+
+   WHEN 'BOOK'.
+     PERFORM CHECK_SELECT.
+     CHECK GV_ERROR IS INITIAL.
+
+     PERFORM GET_BOOKINFO.
+     CHECK GV_ERROR IS INITIAL.
+
+     CALL SCREEN 200 STARTING AT 5 2.
+
+    WHEN OTHERS.
+  ENDCASE.
+
+
+"OK_CODE를 클리어 해줘야 함. 그래서 SAVE_OK에 변수값을 저장 함. 옮겨담음. 찌꺼기를 없애주기 위해서
+
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  EXIT_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE EXIT_0200 INPUT.
+
+  CASE OK_CODE.
+    WHEN 'CANC'.
+      LEAVE TO SCREEN 0. "원래 있던 스크린에서 전 스크린으로 가라는 얘기
+
+    WHEN OTHERS.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0200 INPUT.
+
+SAVE_OK = OK_CODE.
+  CLEAR: OK_CODE.
+
+*-- SAVE_OK ACTIONS.
+  CASE SAVE_OK.
+    WHEN 'OK'.
+      LEAVE TO SCREEN 0.
+
+    WHEN OTHERS.
+  ENDCASE.
+
+ENDMODULE.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

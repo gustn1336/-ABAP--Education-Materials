@@ -1,0 +1,17 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_B
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_MB.
+
+DATA: GV_STRB TYPE C LENGTH 10.
+
+IMPORT ABAP_MEMORY TO GV_STRB FROM MEMORY ID 'HYUN'.
+
+FREE MEMORY ID 'HYUN'.
+
+SET PARAMETER ID 'SAP_MEMORY' FIELD GV_STRB.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

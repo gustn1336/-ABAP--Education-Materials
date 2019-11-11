@@ -1,0 +1,209 @@
+
+*&---------------------------------------------------------------------*
+*& Include          ZEDU20_28I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE EXIT INPUT.
+
+*-- OK_CODE ACTIONS.
+  CASE OK_CODE.
+    WHEN 'CANC'.
+      LEAVE TO SCREEN 0. "원래 있던 스크린에서 전 스크린으로 가라는 얘기
+
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+
+    WHEN OTHERS.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0100 INPUT.
+
+  CLEAR: SAVE_OK.
+
+  "-- move ok code.
+  SAVE_OK = OK_CODE.
+  CLEAR: OK_CODE.
+
+*-- SAVE_OK ACTIONS.
+  CASE SAVE_OK.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+
+  WHEN 'CHAN'.  "상태변경
+      READ TABLE GT_DISPLAY WITH KEY CHECK = 'X'.
+      IF SY-SUBRC EQ 0.
+        CALL SCREEN 0200 STARTING AT 5 5.
+      ELSE.
+        GV_ERROR = 'X'.
+        MESSAGE S000 WITH TEXT-M03 DISPLAY LIKE 'E'.
+        EXIT.
+      ENDIF.
+
+    WHEN 'SAVE'.  "저장
+      PERFORM CHECK_DATA.
+      CHECK GV_ERROR IS INITIAL.
+
+      PERFORM POPUP_TO_CONFIRM USING TEXT-PT1"타이틀
+                                     TEXT-QT1."내용
+
+      CHECK GV_ANSWER = '1'.
+
+      PERFORM SAVE_DATA.
+
+     WHEN 'FORM'.  "스마트폼
+             PERFORM CHECK_SEL.
+             CHECK GV_ERROR IS INITIAL.
+             PERFORM CALL_SMARTFORMS.
+
+
+    WHEN OTHERS.
+  ENDCASE.
+
+
+"OK_CODE를 클리어 해줘야 함. 그래서 SAVE_OK에 변수값을 저장 함. 옮겨담음. 찌꺼기를 없애주기 위해서
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  EXIT_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE EXIT_0200 INPUT.
+
+*-- OK_CODE ACTIONS.
+  CASE OK_CODE.
+    WHEN 'CANC'.
+      LEAVE TO SCREEN 0.
+
+    WHEN OTHERS.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0200 INPUT.
+
+DATA: LS_DD07V TYPE DD07V.
+  DATA: LV_VALUE TYPE DD07L-DOMVALUE_L.
+
+  CLEAR: SAVE_OK.
+
+  "-- move ok code.
+  SAVE_OK = OK_CODE.
+  CLEAR: OK_CODE.
+
+*-- SAVE_OK ACTIONS.
+  CASE SAVE_OK.
+    WHEN 'OK'.
+      LOOP AT GT_DISPLAY WHERE CHECK EQ 'X'.
+        GT_DISPLAY-STAT = GV_STAT.
+        CASE GV_STAT.
+          WHEN '02' OR '04' OR '05'.
+            GT_DISPLAY-ENDATE = SY-DATUM.
+          WHEN '01' OR '03'.
+            CLEAR GT_DISPLAY-ENDATE.
+          WHEN OTHERS.
+        ENDCASE.
+
+        LV_VALUE = GV_STAT.
+        CALL FUNCTION 'DD_DOMVALUE_TEXT_GET'
+        "테이블이 아닌 스트럭처 하나만 들고옴.
+          EXPORTING
+            DOMNAME  = 'ZD_STAT'
+            VALUE    = LV_VALUE
+            LANGU    = SY-LANGU
+          IMPORTING
+            DD07V_WA = LS_DD07V.
+
+        GT_DISPLAY-STNM = LS_DD07V-DDTEXT.
+
+CLEAR : GT_DISPLAY-ICON.
+
+          CASE GT_DISPLAY-STAT.
+  WHEN '02' OR '04' OR '05'.
+      IF GT_DISPLAY-ENDATE IS INITIAL.
+              GT_DISPLAY-ICON = ICON_LED_RED.
+              ENDIF.
+  WHEN OTHERS.
+ENDCASE.
+
+   IF GT_DISPLAY-ENDATE IS NOT INITIAL.
+      CASE  GT_DISPLAY-STAT.
+        WHEN '01' OR '03'.
+              GT_DISPLAY-ICON = ICON_LED_RED.
+        WHEN OTHERS.
+         ENDCASE.
+        ENDIF.
+
+
+    IF GT_DISPLAY-ICON NE ICON_LED_RED.
+      GT_DISPLAY-ICON = ICON_LED_GREEN.
+    ENDIF.
+
+        MODIFY GT_DISPLAY[] FROM GT_DISPLAY.
+      ENDLOOP.
+
+
+
+      PERFORM REFRESH_GRID_0100.
+      "새로고침을 반드시 해줘야함.
+
+      LEAVE TO SCREEN 0.
+
+    WHEN OTHERS.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  EXIT_0300  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE EXIT_0300 INPUT.
+
+*-- OK_CODE ACTIONS.
+  CASE OK_CODE.
+    WHEN 'CANC'.
+      LEAVE TO SCREEN 0.
+
+    WHEN OTHERS.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0300  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0300 INPUT.
+
+  CLEAR: SAVE_OK.
+
+  "-- move ok code.
+  SAVE_OK = OK_CODE.
+  CLEAR: OK_CODE.
+
+*-- SAVE_OK ACTIONS.
+  CASE SAVE_OK.
+    WHEN 'OK'.
+      LEAVE TO SCREEN 0.
+
+    WHEN OTHERS.
+  ENDCASE.
+
+ENDMODULE.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

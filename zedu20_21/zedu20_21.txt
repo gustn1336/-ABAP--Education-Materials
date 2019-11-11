@@ -1,0 +1,47 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_20
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_21.
+
+TABLES: SFLIGHT. "내가 이 테이블을 쓰겠다고 선언하는 것. 외부에서 만든 테이블만 가능. 인터널 테이블은 불가능.
+                             " 스트럭쳐로 사용할 수 있음.
+
+DATA: LV_CARRID LIKE SFLIGHT-CARRID, "LIKE는 선언한 것만 사용할 수 있음.
+           LV_CONNID LIKE SFLIGHT-CONNID.
+
+DATA: BEGIN OF GS_FLIGHT,
+          CARRID LIKE SFLIGHT-CARRID,
+          CONNID LIKE SFLIGHT-CONNID,
+          SEATMAX LIKE SFLIGHT-SEATSMAX, " TBALES로 선언했기 때문에 LIKE를 쓸 수 있음.
+          END OF GS_FLIGHT,
+
+         GT_FLIGHT LIKE GS_FLIGHT OCCURS 0, " OCCURS을 넣으면서 테이블이 되는 것.
+          GT_FLIGHT2 LIKE TABLE OF GS_FLIGHT WITH HEADER LINE. "똑같은 테이블.
+
+DATA: GV_VAL TYPE C LENGTH '10'.
+
+SELECTION-SCREEN BEGIN OF BLOCK BL1 WITH FRAME TITLE TEXT-001. "하나로 묶어주는 기능
+ PARAMETERS: P_CARRID LIKE SFLIGHT-CARRID. "파라미터는 하나의 값만 넣을때 P로 시작함.
+ SELECT-OPTIONS: S_CONNID FOR SFLIGHT-CONNID. "FOR라는 것을 썼음. 스트럭처가 이미 정의가 되어 있어야 함.
+                                                                                      "다중값을 입력할 때 씀.
+ SELECTION-SCREEN END OF BLOCK BL1.
+
+ SELECTION-SCREEN BEGIN OF BLOCK BL2 WITH FRAME TITLE TEXT-002.
+SELECT-OPTIONS: S_1 FOR SFLIGHT-CARRID DEFAULT 'AC',
+                             S_2 FOR GV_VAL DEFAULT '1111' TO '9999',
+                             S_3 FOR GV_VAL DEFAULT 'AAAA' TO 'ZZZZ' OPTION BT SIGN E, "제외
+                             S_4 FOR SFLIGHT-CARRID DEFAULT 'AA*' OPTION EQ SIGN I, "포함, AA로 포함하는 것을 다 데리고 옴.
+                             S_5 FOR SFLIGHT-CARRID NO-DISPLAY,
+                             S_6 FOR SFLIGHT-CARRID LOWER CASE, "소문자로 넣기 실행하면 소문자로 넣어짐.
+                             S_7 FOR SFLIGHT-CARRID OBLIGATORY, " 필수값
+                             S_8 FOR SFLIGHT-CARRID NO-EXTENSION, " 확장을 안함. 오른쪽 버튼제거
+                             S_9 FOR SFLIGHT-CARRID NO INTERVALS, "FROM TO 값을 못넣음. 단일값만 가능.
+                             S_10 FOR SFLIGHT-CARRID VISIBLE LENGTH 1,
+                             S_11 FOR SFLIGHT-CARRID NO-EXTENSION NO INTERVALS. "파라미터랑 같은 기능 단일값 하나만 입력 가능
+
+ SELECTION-SCREEN END OF BLOCK BL2.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

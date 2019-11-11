@@ -1,0 +1,26 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_24
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_24 NO STANDARD PAGE HEADING. "헤더 지워주는 것
+
+TOP-OF-PAGE. "제일 위에 실행되는 실행되는 이벤트 새로운 페이지에 첫 데이터가 출력되기 전 수행  페이지가 없으면 생성X
+    WRITE: SY-TITLE, 60 'PAGE NO : ', SY-PAGNO.
+    ULINE.
+    WRITE: / 'ENJOY ABAP', SY-DATUM.
+
+   START-OF-SELECTION. "실행문
+      SET PF-STATUS 'PF_STATUS'.
+      WRITE: 'Click'.
+          DO 10 TIMES.
+          WRITE: / SY-INDEX.
+    ENDDO.
+
+AT USER-COMMAND.
+  CASE 'BTN01'.
+      LEAVE PROGRAM.
+  ENDCASE.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

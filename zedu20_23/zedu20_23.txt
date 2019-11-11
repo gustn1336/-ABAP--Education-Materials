@@ -1,0 +1,25 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_23
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_23.
+
+SELECTION-SCREEN BEGIN OF BLOCK BL1 WITH FRAME TITLE TEXT-001. " 실행만 눌러도 셀렉트 스크린이 돌아감.
+  PARAMETERS: P_1 TYPE SFLIGHT-CARRID,
+                        P_2 TYPE SFLIGHT-CONNID,
+                         P_3 TYPE SFLIGHT-FLDATE. "달력형식
+  SELECTION-SCREEN END OF BLOCK BL1.
+
+  AT SELECTION-SCREEN ON P_1.
+    IF P_1 EQ 'AA'.
+      MESSAGE TEXT-003 TYPE 'E'.
+      ENDIF.
+
+        AT SELECTION-SCREEN ON P_2.
+    IF P_2 EQ '0017'.
+      MESSAGE TEXT-003 TYPE 'E'.
+      ENDIF.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

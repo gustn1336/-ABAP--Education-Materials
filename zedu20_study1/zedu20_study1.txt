@@ -1,0 +1,52 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_STUDY1
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_STUDY1.
+
+DATA: GS_DATA TYPE ZEDU20_EX3TA,
+          GT_DATA TYPE TABLE OF ZEDU20_EX3TA.
+
+DATA: GV_SUM TYPE I,
+          GV_FNAME TYPE CHAR20,
+          GV_NUM TYPE N LENGTH 2.
+
+FIELD-SYMBOLS: <FS_STRC> LIKE GS_DATA,
+                            <FS>.
+
+SELECT *
+  INTO TABLE GT_DATA
+  FROM ZEDU20_EX3TA
+  WHERE ZYEAR EQ '2019'.
+
+GS_DATA-ZYEAR = '2018'.
+GS_DATA-MON01 = 60.
+GS_DATA-MON02 = 20.
+GS_DATA-MON03 = 50.
+GS_DATA-MON04 = 10.
+GS_DATA-MON05 = 90.
+GS_DATA-MON06 = 120.
+GS_DATA-MON07 = 70.
+GS_DATA-MON08 = 80.
+GS_DATA-MON09 = 90.
+GS_DATA-MON10 = 40.
+GS_DATA-MON11 = 20.
+GS_DATA-MON12 = 70.
+
+
+APPEND GS_DATA TO GT_DATA.
+
+LOOP AT  GT_DATA INTO GS_DATA.
+  CLEAR GV_SUM.
+  DO 12 TIMES.
+    GV_NUM = SY-INDEX.
+    CONCATENATE 'GS_DATA-MON' GV_NUM INTO GV_FNAME.
+    ASSIGN (GV_FNAME) TO <FS>.
+    GV_SUM = GV_SUM + <FS>.
+  ENDDO.
+WRITE: GV_SUM, /.
+ENDLOOP.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

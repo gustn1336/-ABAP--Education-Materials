@@ -1,0 +1,214 @@
+*&---------------------------------------------------------------------*
+*& Include          ZEDU20_25F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form INIT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+
+FORM INIT .
+*초기값 생성
+*화면이 뜨기 전에 변수에 넣어짐.
+
+"P_SNO = ' '.
+
+*S_MOBILE-OPTION = 'EQ'.
+*S_MOBILE-SIGN = 'I'.
+*S_MOBILE-LOW = '01093857363'.
+*APPEND S_MOBILE. "헤더가 있는 테이블. 스트럭쳐를 안씀.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+
+FORM GET_DATA .
+
+SELECT *
+  INTO CORRESPONDING FIELDS OF TABLE GT_DATA
+  FROM ZEDU20_EX4TA
+*  WHERE SNO EQ P_SNO 반드시 키 값으로 잡음 안 넣으면 없는값이 검색댐..
+  WHERE SNO IN S_SNO
+  AND MOBILE IN S_MOBILE.
+
+
+CLEAR GV_ERROR.
+IF GT_DATA[] IS INITIAL. "참. 거짓으로 나뉨. INITIAL은 데이터가 비어있는가?
+  GV_ERROR = 'X'.
+  MESSAGE S001 DISPLAY LIKE 'E'. "S는 메세지 타입. E타입으로 하면 프로그램이 진행이 안됨.
+                                                      "정상타입으로 실행이 되지만 보이는 것은 에러로 하라!
+  EXIT. "FORM문을 빠져나감.
+ENDIF.
+
+  CLEAR GS_DATA.
+  CLEAR : GT_BDCDATA[].
+
+  DESCRIBE TABLE GT_DATA LINES GV_CNT.
+
+  LOOP AT GT_DATA INTO GS_DATA.
+    CALL FUNCTION 'STRING_REPLACE'
+      EXPORTING
+        PATTERN                   = '10'
+        SUBSTITUTE                = '20'
+      CHANGING
+        TEXT                      = GS_DATA-SNO
+*     EXCEPTIONS
+*       WRONG_STRING_LENGTH       = 1
+*       OTHERS                    = 2
+              .
+    IF SY-SUBRC NE 0.    "SY_SUBRC은 어떠한 행동을 했을때마다 바뀜.
+* Implement suitable error handling here
+    ENDIF.
+
+ PERFORM BDC_RUN.
+ PERFORM CALL_TRANSACTION.
+
+  ENDLOOP.
+
+* PERFORM BDC_RUN.
+* PERFORM CALL_TRANSACTION.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form BDC_RUN
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM BDC_RUN .
+
+*DATA: LV_STR1 TYPE CHAR50,
+*         LV_STR2 TYPE CHAR50,
+*         LV_STR3 TYPE CHAR50,
+*         LV_NUM TYPE N LENGTH 2.
+
+
+PERFORM DYNPRO USING : "값을 넘김. 콜 바이 레퍼런스
+*                                                                                                                          START ID     프로그램 ID         SCREEN NO.  (START ID가 X 일때)
+*                                                                                                                         STARTID      FIELDNAME        FIELD VALUE.(START ID가 X가 아닐때)
+     'X'       'SAPLZEDU20_FG99'                  '0001',                                           "텍스트로 다이렉트로 보내줌. 변수랑 같은 값.
+      ' '       'BDC_OKCODE'                          '=NEWL',
+
+     'X'       'SAPLZEDU20_FG99'                  '0001',
+      ' '       'BDC_OKCODE'                           '=SAVE',
+      ' '       'ZEDU20_EX4TA-SNO(01)'           GS_DATA-SNO,
+      ' '       'ZEDU20_EX4TA-SNAME(01)'       GS_DATA-SNAME,
+      ' '       'ZEDU20_EX4TA-MOBILE(01)'      GS_DATA-MOBILE.
+
+
+
+* 뜻 : PERFORM DYNPRO USING      'X'       'SAPMF05A'       '0122'
+*      PERFORM DYNPRO USING        ' '       'RF05A-NEWUM'    'R'. 이뜻이랑 똑같음. 퍼폼문이 두번 실행됨.
+
+*  PERFORM DYNPRO USING :
+** START ID     프로그램 ID         SCREEN NO.  (START ID가 X 일때)
+** STARTID      FIELDNAME           FIELD VALUE.(START ID가 X가 아닐때)
+*         'X'       'SAPLZEDU20_FG99'       '0001',
+*         ' '        'BDC_OKCODE'              '=NEWL',
+*
+*         'X'       'SAPLZEDU20_FG99'       '0001',
+*         ' '        'BDC_OKCODE'               '=SAVE'.
+
+
+
+*  LOOP AT GT_DATA INTO GS_DATA.
+*
+*        CALL FUNCTION 'STRING_REPLACE'
+*      EXPORTING
+*        PATTERN    = '10'
+*        SUBSTITUTE = '20'
+*      CHANGING
+*        TEXT       = GS_DATA-SNO.
+*
+*
+*    LV_NUM = SY-TABIX.
+*
+*    CLEAR: LV_STR1, LV_STR2, LV_STR3.
+*    CONCATENATE 'ZEDU20_EX4TA-SNO(' LV_NUM ')' INTO LV_STR1.
+*    CONCATENATE 'ZEDU20_EX4TA-SNAME(' LV_NUM ')' INTO LV_STR2.
+*    CONCATENATE 'ZEDU20_EX4TA-MOBILE(' LV_NUM ')' INTO LV_STR3.
+*
+*    PERFORM DYNPRO USING :
+** START ID     프로그램 ID         SCREEN NO.  (START ID가 X 일때)
+** STARTID      FIELDNAME           FIELD VALUE.(START ID가 X가 아닐때)
+*
+*         ' '        LV_STR1  GS_DATA-SNO,
+*         ' '        LV_STR2  GS_DATA-SNAME,
+*         ' '        LV_STR3  GS_DATA-MOBILE.
+*  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DYNPRO
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> P_
+*&      --> P_
+*&      --> P_
+*&---------------------------------------------------------------------*
+FORM DYNPRO  USING   PV_DYNBEGIN "시작이름
+                                       PV_FNAM              "필드이름
+                                       PV_FVAL.             "실드값
+
+* - Prefix 정의 - Form Parameter
+*   1. PT_  : Internal Table or Ranges
+*   2. PS_  : Structure
+*   3. PV_  : Variables
+*   4. PR_ : Reference Variables
+
+  CLEAR: GT_BDCDATA.
+
+  IF PV_DYNBEGIN EQ ABAP_TRUE.              " X값, SAP에서는 참이면 X 거짓이면 NULL값.
+    GT_BDCDATA-DYNBEGIN = ABAP_TRUE.
+    GT_BDCDATA-PROGRAM  = PV_FNAM.
+    GT_BDCDATA-DYNPRO   = PV_FVAL.
+    APPEND GT_BDCDATA.
+  ELSE.
+    GT_BDCDATA-FNAM = PV_FNAM.
+    GT_BDCDATA-FVAL = PV_FVAL.
+    APPEND GT_BDCDATA.
+  ENDIF.
+
+
+ENDFORM.
+
+"X는 시작이라는 뜻. X가 시작 되고 OKCODE가 실행됨.
+" 커서로 되어 있는 얘는 안넣어도 됨.
+*&---------------------------------------------------------------------*
+*& Form CALL_TRANSACTION
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CALL_TRANSACTION .
+DATA: LV_MODE TYPE CHAR01.
+
+  LV_MODE = 'N'. "E는 화면에 에러가 나면 멈추는 것. N은 에러가 나든말든 전송, A는 할때마다,
+
+  CLEAR: GT_MESSAGE, GT_MESSAGE[].
+  CALL TRANSACTION 'ZEDU20_EX4VW' USING GT_BDCDATA "어떠한 트렌젝션을 쓰는 것. 메크로 돌릴때 그 값으로 동일하게 돌림
+        MODE LV_MODE
+        UPDATE 'S' "씽크, 동기화
+        MESSAGES INTO GT_MESSAGE. "스텐다그 메세지가 출력됨. 오류면 오류, 저장하면 저장완료, 펑션의 EXPORT같은 기능.
+
+  CLEAR: GT_BDCDATA, GT_BDCDATA[].
+
+  READ TABLE GT_MESSAGE WITH KEY MSGTYP = 'E'. "메세지 타입이 E인 GT메세지를 가져와라, S로 들고오면 모든 성공이 S로 들고오지 않음. 그러므로 쓰면 안됨.
+*더 정확하게 할려면 메세지 ID와 메세지 타입으로 들고옴
+  IF SY-SUBRC EQ 0. "데이터를 가져오면 0, E값이 있는 거니깐 에러로 판단.
+    GV_ERROR = 'X'.
+  ELSE.
+    MESSAGE S003 WITH GV_CNT. " 내가 설정한 것.
+  ENDIF.
+ENDFORM.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

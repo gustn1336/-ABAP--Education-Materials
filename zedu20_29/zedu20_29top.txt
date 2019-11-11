@@ -1,0 +1,35 @@
+*&---------------------------------------------------------------------*
+*& Include          ZEDU20_29TOP
+*&---------------------------------------------------------------------*
+
+TABLES: SFLIGHT, SCARR.
+
+DATA: GV_CNT TYPE I,
+          GV_ERROR TYPE C.
+
+DATA: GV_ANSWER TYPE C,
+          GV_CHANGE TYPE C,
+          OK_CODE TYPE SY-UCOMM,
+          SAVE_OK TYPE SY-UCOMM.
+
+
+
+DATA: BEGIN OF GT_DISPLAY OCCURS 0,
+          CARRID LIKE SCARR-CARRID,
+          CARRNAME LIKE SCARR-CARRNAME,
+          CONNID LIKE SFLIGHT-CONNID,
+          FLDATE LIKE SFLIGHT-FLDATE,
+          PRICE LIKE SFLIGHT-PRICE,
+          CURRENCY LIKE SFLIGHT-CURRENCY,
+          PLANETYPE LIKE SFLIGHT-PLANETYPE,
+          SEATSMAX LIKE SFLIGHT-SEATSMAX,
+          SEATSOCC LIKE SFLIGHT-SEATSOCC,
+          PAYMENTSUM LIKE SFLIGHT-PAYMENTSUM, "필드 카탈로그를 쓰기 위해서 꼭 라이크로 선언
+          LCOLOR(04),
+        END OF GT_DISPLAY.
+
+
+  DATA: GT_BOOK LIKE TABLE OF ZEDU20_BOOKST  WITH HEADER LINE. " 엑셀 값을 담는 테이블
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

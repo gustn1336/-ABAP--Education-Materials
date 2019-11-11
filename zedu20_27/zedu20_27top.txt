@@ -1,0 +1,20 @@
+*&---------------------------------------------------------------------*
+*& Include          ZEDU20_25TOP
+*&---------------------------------------------------------------------*
+TABLES : ZEDU20_EX5TA. "SELECT OPTION을 쓰기 위한 것.
+
+
+DATA: GV_CNT TYPE I,
+          GV_ERROR TYPE C.
+
+DATA: BEGIN OF GT_DATA OCCURS 0,
+          ZYEAR LIKE ZEDU20_EX5TA-ZYEAR,
+          SNO LIKE ZEDU20_EX5TA-SNO,
+          IMDATE LIKE ZEDU20_EX5TA-IMDATE,
+          SNAME LIKE ZEDU20_EX5TA-SNAME,
+          END OF GT_DATA.
+
+  DATA: GT_INTERN LIKE TABLE OF ALSMEX_TABLINE WITH HEADER LINE. " 엑셀 값을 담는 테이블
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

@@ -1,0 +1,48 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_23
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_22.
+
+TABLES: SCARR, SSCRFIELDS. " 펑션키를 쓰기 위해서 선언
+
+SELECTION-SCREEN BEGIN OF LINE. "LINE은 한줄로 나옴
+  SELECTION-SCREEN POSITION 3.
+SELECTION-SCREEN COMMENT (8) text-003 .
+  PARAMETERS: P_1 LIKE SCARR-CARRID.
+
+  SELECTION-SCREEN POSITION 18.
+SELECTION-SCREEN COMMENT (8) text-004 .
+  PARAMETERS: p_2 LIKE SCARR-CARRNAME.
+  SELECTION-SCREEN END OF LINE.
+
+  SELECTION-SCREEN SKIP 2. "줄을 띄어줌.
+  SELECTION-SCREEN ULINE. "UNDERLINE. 줄을 끄어줌.
+
+  SELECTION-SCREEN BEGIN OF BLOCK BL1 WITH FRAME TITLE TEXT-001.
+    SELECT-OPTIONS: S_1 FOR SCARR-CARRID.
+    SELECTION-SCREEN END OF  BLOCK BL1.
+
+    SELECTION-SCREEN PUSHBUTTON /POS_LOW(10) TEXT-002 USER-COMMAND BTN01. " 버튼을 누르면 UCOMM에 들어감.
+    SELECTION-SCREEN FUNCTION KEY 1. "펑션키 생성,
+
+    INITIALIZATION. "제일먼저 실행되는 이벤트, 제일 먼저 타게 됨. 실행될때만 제일 빠름. 선언부보단 느림.
+    MOVE '기능키' TO SSCRFIELDS-FUNCTXT_01.
+    "SSCRFIELDS-FUNCTXT_01 = 'FUNTION KEY 1'  같은구문
+
+    AT SELECTION-SCREEN.
+      IF SSCRFIELDS-UCOMM = 'FC01'. "펑션키가 자동으로 들어감. 자동으로 FC00~~~~05가 들어옴. 변수 꼭 FC00.
+           MESSAGE 'You Clicked Funtion key 1' TYPE 'S'. "I는 인포메이션의 약자. 알림창으로 뜸.
+      ENDIF.
+
+      IF SSCRFIELDS-UCOMM = 'BTN01'.
+           MESSAGE 'You Clicked Funtion key button' TYPE 'I'. " 밑에 경고로 뜸. S = 성공메세지, E = 에러메세지
+           MESSAGE TEXT-005 TYPE 'E'.
+      ENDIF.
+
+      "I W E S타입을 가장 많이 씀.
+      "SAP에서는 코드성들은 다 대문자..
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

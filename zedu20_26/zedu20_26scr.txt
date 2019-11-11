@@ -1,0 +1,12 @@
+*&---------------------------------------------------------------------*
+*& Include          ZEDU20_25SCR
+*&---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF BLOCK BL1 WITH FRAME TITLE TEXT-001.
+ PARAMETERS:  P_SNO LIKE ZEDU20_EX4TA-SNO NO-DISPLAY. "변수랑 똑같음. TYPE으로도 지정 가능. TYPE은 메모리 잡아 먹음.
+ SELECT-OPTIONS: S_SNO FOR ZEDU20_EX4TA-SNO NO INTERVALS NO-EXTENSION.
+ SELECT-OPTIONS: S_MOBILE FOR ZEDU20_EX4TA-MOBILE. "TYPE이나 LIKE로 안됨. 무조건 FOR
+ SELECTION-SCREEN END OF BLOCK BL1.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

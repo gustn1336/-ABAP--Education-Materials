@@ -1,0 +1,1539 @@
+*&---------------------------------------------------------------------*
+*& Include          ZEDU20_25F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form INIT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+
+FORM INIT .
+**초기값 생성
+**화면이 뜨기 전에 변수에 넣어짐.
+
+  P_DISP = 'X'.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form F4_FILE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      <-- P_FILE
+*&---------------------------------------------------------------------*
+FORM F4_FILE  CHANGING PV_FILE.
+
+* - PREFIX 정의 - FORM PARAMETER
+*   1. PT_  : Internal Table or Ranges
+*   2. PS_  : Structure
+*   3. PV_  : Variables
+*   4. PR_ : Reference Variables
+
+  DATA: LT_FILE_TABLE TYPE FILETABLE,
+        "테이블 타입은 테이블을 만들때 타입을 사용해서 할 수 있음.
+        "스트럭처를 사용해서 테이블을 만들때도 스트럭처에서 테이블타입을 만든 다음에 테이블을 만드는 형식
+        LS_FIEL_TABLE TYPE FILE_TABLE.
+
+  DATA: LV_SUBRC  TYPE I,
+        LV_ACTION TYPE I.
+
+  CALL METHOD CL_GUI_FRONTEND_SERVICES=>FILE_OPEN_DIALOG "창을 띄우는 것.
+    EXPORTING
+      WINDOW_TITLE            = 'File Path' "윈도우  이름.
+      DEFAULT_FILENAME        = ''
+      FILE_FILTER             =
+                                'Excel files (*.XLSX)|*.XLSX| Excel files (*.XLS)|*.XLS| '
+      "파일 형식, 지금은 엑셀
+*      Excel files (*.XLS)|*.XLS| Excel files (*.XLSX)|*.XLSX|'
+      INITIAL_DIRECTORY       = 'C:\' "처음 뜨는 폴더
+      MULTISELECTION          = ' ' "중복 올리기
+    CHANGING
+      FILE_TABLE              = LT_FILE_TABLE "선택한 파일 경로 이름
+      RC                      = LV_SUBRC     "에러가 맞냐 아니냐
+      USER_ACTION             = LV_ACTION    "열기 취소버튼
+      "                  우리가 받을 값들.
+    EXCEPTIONS
+      FILE_OPEN_DIALOG_FAILED = 1 "오류들 정의
+      CNTL_ERROR              = 2
+      ERROR_NO_GUI            = 3.   "창 띄우는 것.
+
+  CALL METHOD CL_GUI_CFW=>FLUSH.
+
+  CASE LV_ACTION. "  OK면 0, 캔슬이면 9.
+
+    WHEN  CL_GUI_FRONTEND_SERVICES=>ACTION_OK. "OK를 눌렀나, 캔슬을 눌렀나
+
+      READ TABLE LT_FILE_TABLE INDEX 1 INTO LS_FIEL_TABLE.
+      PV_FILE = LS_FIEL_TABLE.
+
+    WHEN CL_GUI_FRONTEND_SERVICES=>ACTION_CANCEL.
+      EXIT.
+  ENDCASE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EXCELUPLOAD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM EXCELUPLOAD .
+
+  CALL FUNCTION 'ALSM_EXCEL_TO_INTERNAL_TABLE' "엑셀의 내용을 가져오는 펑션
+    EXPORTING
+      FILENAME                = P_FILE
+      I_BEGIN_COL             = 1         "Excel file start col     "
+      I_BEGIN_ROW             = 2         "Excel file start row  "
+      I_END_COL               = 100
+      I_END_ROW               = 50000
+    TABLES
+      INTERN                  = GT_INTERN                            "
+    EXCEPTIONS
+      INCONSISTENT_PARAMETERS = 1 "
+      UPLOAD_OLE              = 2
+      OTHERS                  = 3.
+
+  IF SY-SUBRC <> 0. "not equel
+    MESSAGE S012 WITH TEXT-M02.
+    GV_ERROR = ABAP_TRUE.
+    EXIT.
+  ENDIF.
+  "스텐다드 메세지, 굳이 없어도 됨.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_IT_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CREATE_IT_DATA .
+
+  DESCRIBE TABLE GT_INTERN LINES SY-TFILL. "
+
+
+  IF SY-TFILL EQ 0. "가져온 개수가 0이냐? 데이터가 없냐?
+    MESSAGE S012 WITH TEXT-M01. " 만들어진 데이터가 없음.
+    GV_ERROR = ABAP_TRUE. " 에러라고 찍어줌
+    EXIT.
+  ELSE.
+
+*-- Excel file -> itab
+    PERFORM EXCEL_TO_ITAB.
+
+  ENDIF.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form EXCEL_TO_ITAB
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM EXCEL_TO_ITAB .
+
+*DATA: LS_DBTAB8 TYPE ZEDU20_EX8TA.
+*  DATA: LT_DBTAB8 LIKE TABLE OF LS_DBTAB8.
+*    DATA: LS_DBTAB9 TYPE ZEDU20_EX9TA.
+*  DATA: LT_DBTAB9 LIKE TABLE OF LS_DBTAB9.
+*    DATA: LS_DBTAB10 TYPE ZEDU20_EX10TA.
+*  DATA: LT_DBTAB10 LIKE TABLE OF LS_DBTAB10.
+*  DATA: LS_EX8TA TYPE ZEDU20_EX8TA. "스트럭쳐
+*  DATA: LS_EX9TA TYPE ZEDU20_EX9TA.
+*  DATA: LS_EX10TA TYPE ZEDU20_EX10TA.
+
+  DATA: LT_DD07V TYPE TABLE OF DD07V WITH HEADER LINE.
+  CLEAR: GT_DISPLAY.
+  CLEAR: GS_GRADE, GT_GRADE.
+
+  FIELD-SYMBOLS: <FS_COL>.
+
+  CLEAR: GT_DATA, GT_DATA[].
+
+  LOOP AT GT_INTERN.
+
+*    ADD 1 TO GT_INTERN-COL.
+
+    ASSIGN COMPONENT GT_INTERN-COL OF STRUCTURE "
+                                   GT_DATA TO <FS_COL>.
+
+    <FS_COL> = GT_INTERN-VALUE.
+    "t_data-zyear = GT_INTERN-VALUE. 컬럼값이 2가 됨.
+
+    AT END OF ROW. "ROW
+      "무저건 소팅이 되어 있어야 하며, 다음값을 체크함.
+      APPEND GT_DATA.
+      CLEAR  GT_DATA.
+    ENDAT.
+
+  ENDLOOP.
+
+  DESCRIBE TABLE GT_DATA LINES GV_CNT.
+  " 값이 테이블 형식으로 들어갔음.
+
+  LOOP AT GT_DATA.
+    MOVE-CORRESPONDING GT_DATA TO GT_DISPLAY.
+    APPEND GT_DISPLAY.
+    CLEAR GT_DISPLAY.
+
+    MOVE-CORRESPONDING GT_DATA TO GT_ZEDU20_EX10TA.
+    APPEND GT_ZEDU20_EX10TA.
+    CLEAR GT_ZEDU20_EX10TA.
+  ENDLOOP."두개의 테이블로 나눠서 어펜드함.
+
+  SORT GT_DISPLAY BY ZYEAR SNO. "삭제할때는 솔트가 되어 있어야 함.
+  DELETE ADJACENT DUPLICATES FROM GT_DISPLAY COMPARING ZYEAR SNO.
+  "입학년도 학번이 같은 경우에는 하나 삭제하는 로직.
+
+  SORT GT_ZEDU20_EX10TA BY ZYEAR SNO TERM.
+
+  "추가 데이터
+  "도메인 Value
+  CALL FUNCTION 'DD_DOMVALUES_GET' "도메인을 읽어오는 펑션.
+    EXPORTING
+      DOMNAME        = 'ZD_STAT' "도메인 이름
+      LANGU          = SY-LANGU " 랭귀지. 로그인 언어.
+      TEXT           = 'X' "텍스트를 가져올 것인가?
+    TABLES
+      DD07V_TAB      = LT_DD07V "도메인들을 담을 테이블.
+    EXCEPTIONS
+      WRONG_TEXTFLAG = 1
+      OTHERS         = 2.
+
+  LOOP AT GT_DISPLAY.
+    " 교수명
+    READ TABLE GT_PROF WITH KEY PRFS = GT_DISPLAY-PRFS.
+    IF SY-SUBRC EQ 0.
+      GT_DISPLAY-PNAME = GT_PROF-PNAME.
+    ELSE.
+      GT_DISPLAY-ICON = ICON_LED_RED.
+    ENDIF.
+
+    " 전공내역
+    READ TABLE GT_MAJR WITH KEY MAJOR = GT_DISPLAY-MAJOR.
+    IF SY-SUBRC EQ 0.
+      GT_DISPLAY-MNAME = GT_MAJR-MNAME.
+    ELSE.
+      GT_DISPLAY-ICON = ICON_LED_RED.
+    ENDIF.
+
+    " 재직상태 내역
+    READ TABLE LT_DD07V WITH KEY DOMVALUE_L = GT_DISPLAY-STAT.
+    "재직번호가 가져온 테이블의 값에 있나?
+    IF SY-SUBRC EQ 0.
+      GT_DISPLAY-STNM = LT_DD07V-DDTEXT.
+    ENDIF.
+
+
+    CASE GT_DISPLAY-STAT.
+      WHEN '02' OR '04' OR '05'.
+        IF GT_DISPLAY-ENDATE IS INITIAL.
+          GT_DISPLAY-ICON = ICON_LED_RED.
+        ENDIF.
+      WHEN OTHERS.
+    ENDCASE.
+
+    IF GT_DISPLAY-ENDATE IS NOT INITIAL.
+      CASE  GT_DISPLAY-STAT.
+        WHEN '01' OR '03'.
+          GT_DISPLAY-ICON = ICON_LED_RED.
+        WHEN OTHERS.
+      ENDCASE.
+    ENDIF.
+
+
+    IF GT_DISPLAY-ICON NE ICON_LED_RED.
+      GT_DISPLAY-ICON = ICON_LED_GREEN.
+    ENDIF.
+
+    MODIFY GT_DISPLAY[] FROM GT_DISPLAY.
+  ENDLOOP.
+
+*  LOOP AT GT_DATA .    "헤더가 첫번재부터 돌아감.
+*    MOVE-CORRESPONDING GT_DATA TO LS_DBTAB8. "gt테이블
+*
+*    SELECT SINGLE *                                   "
+*      INTO CORRESPONDING FIELDS OF LS_EX8TA
+*      FROM ZEDU20_EX8TA
+*    WHERE ZYEAR EQ LS_DBTAB8-ZYEAR
+*                AND SNO EQ LS_DBTAB8-SNO
+*                AND IMDATE EQ LS_DBTAB8-IMDATE.
+*
+*    IF SY-SUBRC EQ 0.
+*      LS_DBTAB8-ERDAT = LS_EX8TA-ERDAT.
+*      LS_DBTAB8-ERNAM = LS_EX8TA-ERNAM.
+*      LS_DBTAB8-ERTIM = LS_EX8TA-ERTIM.
+*      LS_DBTAB8-AEDAT = SY-DATUM.            "동일할시
+*      LS_DBTAB8-AENAM = SY-UNAME.
+*      LS_DBTAB8-AETIM = SY-UZEIT.
+*    ELSE.
+*      LS_DBTAB8-ERDAT = SY-DATUM.  "시스템 날자
+*      LS_DBTAB8-ERNAM = SY-UNAME.  " 유저아이디
+*      LS_DBTAB8-ERTIM = SY-UZEIT.    "생성된 시간.
+*      LS_DBTAB8-AEDAT = SY-DATUM.    "수정정보들. 수정된 날짜
+*      LS_DBTAB8-AENAM = SY-UNAME.   "수정된 아이디
+*      LS_DBTAB8-AETIM = SY-UZEIT.     "수정된 생성.
+*    ENDIF.
+*
+*    APPEND LS_DBTAB8 TO LT_DBTAB8.
+*    CLEAR LS_DBTAB8.
+*
+*  ENDLOOP.
+*
+*
+*
+*  MODIFY ZEDU20_EX8TA FROM TABLE LT_DBTAB8.
+*
+*  "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+*
+*    LOOP AT GT_DATA .    "헤더가 첫번재부터 돌아감.
+*    MOVE-CORRESPONDING GT_DATA TO LS_DBTAB9. "gt테.
+*
+*    SELECT SINGLE *                                   "체
+*      INTO CORRESPONDING FIELDS OF LS_EX9TA
+*      FROM ZEDU20_EX9TA
+*    WHERE ZYEAR EQ LS_DBTAB9-ZYEAR
+*                AND SNO EQ LS_DBTAB9-SNO.
+*
+*
+*    IF SY-SUBRC EQ 0.
+*      LS_DBTAB9-ERDAT = LS_EX9TA-ERDAT.
+*      LS_DBTAB9-ERNAM = LS_EX9TA-ERNAM.
+*      LS_DBTAB9-ERTIM = LS_EX9TA-ERTIM.
+*      LS_DBTAB9-AEDAT = SY-DATUM.            "동일할시
+*      LS_DBTAB9-AENAM = SY-UNAME.
+*      LS_DBTAB9-AETIM = SY-UZEIT.
+*    ELSE.
+*      LS_DBTAB9-ERDAT = SY-DATUM.  "시스템 날자
+*      LS_DBTAB9-ERNAM = SY-UNAME.  " 유저아이디
+*      LS_DBTAB9-ERTIM = SY-UZEIT.    "생성된 시간.
+*      LS_DBTAB9-AEDAT = SY-DATUM.    "수정정보들. 수정된 날짜
+*      LS_DBTAB9-AENAM = SY-UNAME.   "수정된 아이디
+*      LS_DBTAB9-AETIM = SY-UZEIT.     "수정된 생성.
+*    ENDIF.
+*
+*    APPEND LS_DBTAB9 TO LT_DBTAB9.
+*    CLEAR LS_DBTAB9.
+*
+*  ENDLOOP.
+*
+*
+*  MODIFY ZEDU20_EX9TA FROM TABLE LT_DBTAB9.
+*  "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+*
+*    LOOP AT GT_DATA .    "헤더가 첫번재부터 돌아감.
+*    MOVE-CORRESPONDING GT_DATA TO LS_DBTAB10. "gt
+*
+*    SELECT SINGLE *                                   "체
+*      INTO CORRESPONDING FIELDS OF LS_EX10TA
+*      FROM ZEDU20_EX10TA
+*    WHERE ZYEAR EQ LS_DBTAB10-ZYEAR
+*                AND SNO EQ LS_DBTAB10-SNO.
+*
+*
+*    IF SY-SUBRC EQ 0.
+*      LS_DBTAB10-ERDAT = LS_EX10TA-ERDAT.
+*      LS_DBTAB10-ERNAM = LS_EX10TA-ERNAM.
+*      LS_DBTAB10-ERTIM = LS_EX10TA-ERTIM.
+*      LS_DBTAB10-AEDAT = SY-DATUM.            "동일할시
+*      LS_DBTAB10-AENAM = SY-UNAME.
+*      LS_DBTAB10-AETIM = SY-UZEIT.
+*    ELSE.
+*      LS_DBTAB10-ERDAT = SY-DATUM.  "시스템 날자
+*      LS_DBTAB10-ERNAM = SY-UNAME.  " 유저아이디
+*      LS_DBTAB10-ERTIM = SY-UZEIT.    "생성된 시간.
+*      LS_DBTAB10-AEDAT = SY-DATUM.    "수정정보들. 수정된 날짜
+*      LS_DBTAB10-AENAM = SY-UNAME.   "수정된 아이디
+*      LS_DBTAB10-AETIM = SY-UZEIT.     "수정된 생성.
+*    ENDIF.
+*
+*    APPEND LS_DBTAB10 TO LT_DBTAB10.
+*    CLEAR LS_DBTAB10.
+*
+*  ENDLOOP.
+*
+*
+*  MODIFY ZEDU20_EX10TA FROM TABLE LT_DBTAB10.
+*  "모디파이는 인설트+업데이트임. 키에 값이 있으면 업데이트, 없으면 인설트 됨.
+
+  MESSAGE S003 WITH GV_CNT.
+  "디비에 있는 테이블에 값을 넣을려면 형태가 똑같아야함. 테이블 타입이 정확히 일치해야함.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SELECT_DATA
+*&---------------------------------------------------------------------*
+FORM SELECT_DATA .
+
+  DATA: LT_DD07V TYPE TABLE OF DD07V WITH HEADER LINE.
+
+  CLEAR: GT_DISPLAY.
+
+  SELECT A~ZYEAR, A~SNO, A~SNAME, A~STAT, A~IMDATE, A~ENDATE,
+         B~BIRTH, B~GENDER, B~MAJOR, C~MNAME, B~PRFS, D~PNAME,
+         B~PHONE, B~ADDR, B~E_MAIL, B~CARYN
+    INTO CORRESPONDING FIELDS OF TABLE @GT_DISPLAY
+    FROM ZEDU20_EX8TA AS A INNER JOIN ZEDU20_EX9TA AS B
+                                   ON B~ZYEAR EQ A~ZYEAR
+                                  AND B~SNO EQ A~SNO
+                           INNER JOIN ZEDU20_EX11TA AS C
+                                   ON C~MAJOR EQ B~MAJOR
+                           INNER JOIN ZEDU20_EX12TA AS D
+                                   ON D~PRFS EQ B~PRFS
+   WHERE A~ZYEAR  IN @S_YEAR
+     AND A~IMDATE IN @S_IMDATE
+     AND A~SNO    IN @S_SNO.
+
+  CLEAR GV_ERROR.
+  IF GT_DISPLAY[] IS INITIAL.
+    GV_ERROR = 'X'.
+    MESSAGE S001 DISPLAY LIKE 'E'.
+    EXIT.
+  ENDIF.
+
+  " Get Domain Value
+  CALL FUNCTION 'DD_DOMVALUES_GET'
+    EXPORTING
+      DOMNAME        = 'ZD_STAT'
+      TEXT           = 'X'
+      LANGU          = SY-LANGU
+    TABLES
+      DD07V_TAB      = LT_DD07V
+    EXCEPTIONS
+      WRONG_TEXTFLAG = 1
+      OTHERS         = 2.
+
+  LOOP AT GT_DISPLAY.
+    READ TABLE LT_DD07V WITH KEY DOMVALUE_L = GT_DISPLAY-STAT.
+    IF SY-SUBRC EQ 0.
+      GT_DISPLAY-STNM = LT_DD07V-DDTEXT.
+    ENDIF.
+
+    MODIFY GT_DISPLAY[] FROM GT_DISPLAY.
+  ENDLOOP.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_INSTANCE_0100
+
+
+
+
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CREATE_INSTANCE_0100 .
+
+  CREATE OBJECT GR_CON1 "
+    EXPORTING
+      CONTAINER_NAME = GV_CONTAINER. "
+
+  CREATE OBJECT GR_GRID1 "그리드 만들기
+    EXPORTING
+      I_PARENT = GR_CON1. " 그리드는 항상 컨테이너 위에 올라감. 업어주는 형상.
+  "컨테이너
+  "그리드가 자식 클래스
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form APPEND_FIELDCAT_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM APPEND_FIELDCAT_0100 .
+
+  DATA: LV_DYNNR TYPE SY-DYNNR.
+  LV_DYNNR = SY-DYNNR.
+
+  "-- field catalog data
+  "   field catalog merge or set fieldcatalog를 사용할 수 있음.
+
+  "{ FIELDCATLOG MERGE 사용
+  PERFORM GET_FIELDCATLOG_DATA USING LV_DYNNR.
+
+  PERFORM MODIFY_FIELDCATLOG_DATA.
+  "}
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_ALV_GRID_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM DISPLAY_ALV_GRID_0100 .
+
+  GS_VARIANT-REPORT = SY-REPID. "현재 프로그램.
+
+  GV_SAVE = 'A'. "ALV의 레이아웃을 어떤식으로 저장할 것이냐.
+
+  "*-- Build field catalog for the alv control
+  CALL METHOD GR_GRID1->SET_TABLE_FOR_FIRST_DISPLAY "
+  "그리드를 스크린에 불러옴.
+    EXPORTING
+      I_DEFAULT                     = ABAP_TRUE
+      IS_LAYOUT                     = GS_LAYOUT
+      IS_VARIANT                    = GS_VARIANT
+      I_SAVE                        = GV_SAVE
+      IT_TOOLBAR_EXCLUDING          = GT_EXCLUDE " 기능버튼을 뺄때.
+    CHANGING
+      IT_FIELDCATALOG               = GT_FIELDCAT "
+      IT_SORT                       = GT_SORT
+      IT_OUTTAB                     = GT_DISPLAY[]
+    EXCEPTIONS
+      INVALID_PARAMETER_COMBINATION = 1
+      PROGRAM_ERROR                 = 2
+      TOO_MANY_LINES                = 3.
+
+  IF SY-SUBRC NE 0.
+    MESSAGE E000(0K) WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form REFRESH_GRID_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM REFRESH_GRID_0100 .
+
+  GS_STABLE-ROW = ABAP_TRUE. "Row
+  GS_STABLE-COL = ABAP_TRUE. "column
+
+  CALL METHOD GR_GRID1->REFRESH_TABLE_DISPLAY
+    EXPORTING
+      IS_STABLE      = GS_STABLE
+      I_SOFT_REFRESH = SPACE.
+
+  CALL METHOD CL_GUI_CFW=>FLUSH.
+
+ENDFORM.
+**&---------------------------------------------------------------------*
+**& Form GET_FIELDCATLOG_DATA
+**&---------------------------------------------------------------------*
+**& text
+**&---------------------------------------------------------------------*
+**& -->  p1        text
+**& <--  p2        text
+**&---------------------------------------------------------------------*
+FORM GET_FIELDCATLOG_DATA USING P_DYNNR. " 스트럭처의 정보를 주는 메소드.
+
+  DATA: LT_FIELDCAT TYPE KKBLO_T_FIELDCAT. "
+  DATA: LV_TABNAME  TYPE DD02L-TABNAME.
+
+  CASE P_DYNNR.
+    WHEN '0100'.
+      LV_TABNAME = 'GT_DISPLAY'.
+    WHEN '0300'.
+      LV_TABNAME = 'GS_GRADE'.
+    WHEN OTHERS.
+  ENDCASE.
+
+  CALL FUNCTION 'K_KKB_FIELDCAT_MERGE' "
+    EXPORTING
+      I_CALLBACK_PROGRAM     = SY-REPID "
+      I_TABNAME              = LV_TABNAME "
+    " I_STRUCNAME            = 'ZEDU20_EX0ST' "ABAP DIC. 정의된 STRUCTURE
+      I_BYPASSING_BUFFER     = ABAP_TRUE "버퍼에 올림. 필드가 바뀌면 갱신하기 위해서
+      I_INCLNAME             = SY-REPID ""
+    CHANGING
+      CT_FIELDCAT            = LT_FIELDCAT[]
+    EXCEPTIONS
+      INCONSISTENT_INTERFACE = 1
+      OTHERS                 = 2.
+
+  IF SY-SUBRC EQ 0.
+
+    "-- Trasnfer LVC.
+    CALL FUNCTION 'LVC_TRANSFER_FROM_KKBLO' "
+      EXPORTING
+        IT_FIELDCAT_KKBLO = LT_FIELDCAT[]
+      IMPORTING
+        ET_FIELDCAT_LVC   = GT_FIELDCAT[] "AVL 타입으로 컨버전을 하는 것..
+      EXCEPTIONS
+        IT_DATA_MISSING   = 1.
+  ELSE.
+
+    " Error Fieldcatalog merge!!
+    MESSAGE E000 WITH 'Error Fieldcatalog merge!!'.
+
+  ENDIF.
+
+ENDFORM.
+**&---------------------------------------------------------------------*
+**& Form MODIFY_FIELDCATLOG_DATA
+**&---------------------------------------------------------------------*
+**& text
+**&---------------------------------------------------------------------*
+**& -->  p1        text
+**& <--  p2        text
+**&---------------------------------------------------------------------*
+FORM MODIFY_FIELDCATLOG_DATA .
+*
+
+  DATA:  LV_TEXT(50).
+
+  "--- Change Fieldcat.
+  LOOP AT GT_FIELDCAT INTO GS_FIELDCAT.
+    CLEAR: LV_TEXT.
+
+    "-- Change fieldcat Attribute
+    CASE GS_FIELDCAT-FIELDNAME.
+      WHEN 'CHECK'.
+        LV_TEXT = TEXT-F01.
+        GS_FIELDCAT-CHECKBOX = 'X'.
+        GS_FIELDCAT-EDIT = 'X'. "수정가능.
+        GS_FIELDCAT-KEY = 'X'.
+      WHEN 'ICON'.
+        LV_TEXT = TEXT-F02.
+        GS_FIELDCAT-ICON = 'X'.
+        GS_FIELDCAT-KEY = 'X'.
+      WHEN 'ZYEAR'.
+        LV_TEXT = TEXT-F03.
+        GS_FIELDCAT-KEY = 'X'.
+      WHEN 'SNO'.
+        LV_TEXT = TEXT-F04.
+        GS_FIELDCAT-KEY = 'X'.
+      WHEN 'SNAME'.
+        LV_TEXT = TEXT-F05.
+        GS_FIELDCAT-KEY = 'X'.
+      WHEN 'STAT'.
+        LV_TEXT = TEXT-F06.
+      WHEN 'STNM'.
+        LV_TEXT = TEXT-F07.
+      WHEN 'IMDATE'.
+        LV_TEXT = TEXT-F08.
+      WHEN 'ENDATE'.
+        LV_TEXT = TEXT-F09.
+      WHEN 'BIRTH'.
+        LV_TEXT = TEXT-F10.
+      WHEN 'GENDER'.
+        LV_TEXT = TEXT-F11.
+      WHEN 'MAJOR'.
+        LV_TEXT = TEXT-F12.
+      WHEN 'MNAME'.
+        LV_TEXT = TEXT-F13.
+      WHEN 'PRFS'.
+        LV_TEXT = TEXT-F14.
+      WHEN 'PNAME'.
+        LV_TEXT = TEXT-F15.
+      WHEN 'PHONE'.
+        LV_TEXT = TEXT-F16.
+      WHEN 'ADDR'.
+        LV_TEXT = TEXT-F17.
+      WHEN 'E_MAIL'.
+        LV_TEXT = TEXT-F18.
+      WHEN 'CARYN'.
+        LV_TEXT = TEXT-F19.
+        GS_FIELDCAT-CHECKBOX = 'X'.
+        "값이 있거나 없거나민 핀단
+      WHEN 'TERM'.
+        LV_TEXT = TEXT-F20.
+      WHEN 'GRADE'.
+        LV_TEXT = TEXT-F21.
+      WHEN 'CREDIT'.
+        LV_TEXT = TEXT-F22.
+
+      WHEN OTHERS.
+        GS_FIELDCAT-NO_OUT = ABAP_TRUE.
+    ENDCASE.
+    "Column Optimizer
+    GS_FIELDCAT-COL_OPT = ABAP_TRUE.
+
+    "-- Common attribute
+    IF LV_TEXT IS NOT INITIAL.
+      GS_FIELDCAT-COLTEXT   = LV_TEXT.
+      GS_FIELDCAT-SCRTEXT_L = LV_TEXT.
+      GS_FIELDCAT-SCRTEXT_M = LV_TEXT.
+      GS_FIELDCAT-SCRTEXT_S = LV_TEXT.
+    ENDIF.
+
+    MODIFY GT_FIELDCAT FROM GS_FIELDCAT.
+  ENDLOOP.
+
+*
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_LISTBOX
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form GET_MASTER
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM GET_MASTER .
+  CLEAR: GT_PROF[], GT_PROF,
+         GT_MAJR[], GT_MAJR.
+
+  SELECT *
+    INTO CORRESPONDING FIELDS OF TABLE GT_PROF
+    FROM ZEDU20_EX12TA.
+
+  SELECT *
+    INTO CORRESPONDING FIELDS OF TABLE GT_MAJR
+    FROM ZEDU20_EX11TA.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form MODIFY_SCREEN
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM MODIFY_SCREEN .
+
+  LOOP AT SCREEN.
+    IF SCREEN-GROUP1 EQ 'MD1'.
+      IF P_DISP EQ ABAP_TRUE.
+        SCREEN-ACTIVE = '1'.
+      ELSE.
+        SCREEN-ACTIVE = '0'.
+      ENDIF.
+      MODIFY SCREEN.
+
+    ELSEIF SCREEN-GROUP1 EQ 'MD2'.
+      IF P_DISP EQ ABAP_TRUE.
+        SCREEN-ACTIVE = '0'.
+      ELSE.
+        SCREEN-ACTIVE = '1'.
+      ENDIF.
+      MODIFY SCREEN.
+
+    ENDIF.
+  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SNO_INPUT_HELP
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SNO_INPUT_HELP .
+
+
+  DATA: LT_DYN_FLD TYPE TABLE OF DYNPREAD,
+        LS_DYN_FLD TYPE DYNPREAD.
+  DATA: LT_RETURN TYPE TABLE OF DDSHRETVAL WITH HEADER LINE.
+  DATA: LV_ZYEAR TYPE ZEDU20_EX8TA-ZYEAR.
+  CLEAR: S_SNO[], S_SNO.
+
+  DATA: BEGIN OF LT_SNO OCCURS 0,
+          ZYEAR LIKE ZEDU20_EX8TA-ZYEAR,
+          SNO   LIKE ZEDU20_EX8TA-SNO,
+          SNAME LIKE ZEDU20_EX8TA-SNAME,
+        END OF LT_SNO.
+
+  LS_DYN_FLD-FIELDNAME = 'S_YEAR-LOW'.
+  APPEND LS_DYN_FLD TO LT_DYN_FLD.
+  CLEAR LS_DYN_FLD.
+
+  CALL FUNCTION 'DYNP_VALUES_READ' "쓴 값을 읽어오는 메소드
+    EXPORTING
+      DYNAME     = SY-CPROG "현재 프로그램 이름
+      DYNUMB     = SY-DYNNR  "현재 스크린 넘버
+    TABLES
+      DYNPFIELDS = LT_DYN_FLD. "현재 스크린의 필드 값을 가져올 테이블
+
+  READ TABLE LT_DYN_FLD INTO LS_DYN_FLD  WITH KEY FIELDNAME = 'S_YEAR-LOW'.
+  IF SY-SUBRC EQ 0.
+    LV_ZYEAR = LS_DYN_FLD-FIELDVALUE.
+  ENDIF.
+
+  IF LV_ZYEAR IS INITIAL. "입력안하면 전체 조회,
+    SELECT ZYEAR SNO SNAME
+      INTO TABLE LT_SNO
+      FROM ZEDU20_EX8TA.
+  ELSE.
+    SELECT ZYEAR SNO SNAME
+    INTO TABLE LT_SNO
+    FROM ZEDU20_EX8TA
+    WHERE ZYEAR EQ LV_ZYEAR.
+  ENDIF.
+
+
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      RETFIELD        = 'SNO'
+      DYNPPROG        = SY-CPROG "현재 프로그램 이름
+      DYNPNR          = SY-DYNNR "  현재 스크린 넘버
+      WINDOW_TITLE    = TEXT-F00 "윈도우 이름.
+      VALUE_ORG       = 'S'
+    TABLES
+      VALUE_TAB       = LT_SNO
+      RETURN_TAB      = LT_RETURN
+    EXCEPTIONS
+      PARAMETER_ERROR = 1
+      NO_VALUES_FOUND = 2
+      OTHERS          = 3.
+
+  IF SY-SUBRC EQ 0.
+    READ TABLE LT_RETURN INDEX 1.
+    S_SNO-SIGN   = 'I'.
+    S_SNO-OPTION = 'EQ '.
+    S_SNO-LOW = LT_RETURN-FIELDVAL.
+    APPEND S_SNO.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form YEAR_INPUT_HELP
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM YEAR_INPUT_HELP .
+
+  DATA: LT_RETURN TYPE TABLE OF DDSHRETVAL WITH HEADER LINE.
+  CLEAR: S_YEAR[], S_YEAR.
+
+  DATA: BEGIN OF LT_SYEAR OCCURS 0,
+          ZYEAR LIKE ZEDU20_EX8TA-ZYEAR,
+        END OF LT_SYEAR.
+
+  SELECT ZYEAR
+    INTO TABLE LT_SYEAR
+    FROM ZEDU20_EX8TA.
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      RETFIELD        = 'ZYEAR'
+      DYNPPROG        = SY-CPROG
+      DYNPNR          = SY-DYNNR
+      WINDOW_TITLE    = TEXT-F00
+      VALUE_ORG       = 'S'
+    TABLES
+      VALUE_TAB       = LT_SYEAR
+      RETURN_TAB      = LT_RETURN
+    EXCEPTIONS
+      PARAMETER_ERROR = 1
+      NO_VALUES_FOUND = 2
+      OTHERS          = 3.
+
+  IF SY-SUBRC EQ 0.
+    READ TABLE LT_RETURN INDEX 1.
+    S_YEAR-SIGN   = 'I'.
+    S_YEAR-OPTION = 'EQ '.
+    S_YEAR-LOW = LT_RETURN-FIELDVAL.
+    APPEND S_YEAR.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHECK_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CHECK_DATA .
+
+  CLEAR GV_ERROR.
+
+  READ TABLE GT_DISPLAY  WITH KEY ICON = ICON_LED_RED.
+  "테이블 중 하나라도 있으면 에러
+  IF SY-SUBRC EQ 0.
+    GV_ERROR = 'X'.
+    MESSAGE S000 WITH TEXT-M05 DISPLAY LIKE 'E'.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form POPUP_TO_CONFIRM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> TEXT_PT1
+*&      --> TEXT_QT1
+*&---------------------------------------------------------------------*
+FORM POPUP_TO_CONFIRM  USING    PV_TITLE
+                             PV_QUEST.
+
+  "-- call popup
+  CALL FUNCTION 'POPUP_TO_CONFIRM' "팝업만드는 펑션
+    EXPORTING
+      TITLEBAR       = PV_TITLE "TEXT-PT1
+*     DIAGNOSE_OBJECT             = ' '
+      TEXT_QUESTION  = PV_QUEST "TEXT-QT1
+*     TEXT_BUTTON_1  = 'Ja'(001)
+*     ICON_BUTTON_1  = ' '
+*     TEXT_BUTTON_2  = 'Nein'(002)
+*     ICON_BUTTON_2  = ' '
+*     DEFAULT_BUTTON = '1'
+*     DISPLAY_CANCEL_BUTTON       = 'X'
+*     USERDEFINED_F1_HELP         = ' '
+*     START_COLUMN   = 25
+*     START_ROW      = 6
+*     POPUP_TYPE     =
+*     IV_QUICKINFO_BUTTON_1       = ' '
+*     IV_QUICKINFO_BUTTON_2       = ' '
+    IMPORTING
+      ANSWER         = GV_ANSWER
+*   TABLES
+*     PARAMETER      =
+    EXCEPTIONS
+      TEXT_NOT_FOUND = 1
+      OTHERS         = 2.
+  IF SY-SUBRC <> 0.
+    MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+    WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SAVE_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SAVE_DATA .
+
+  DATA: LT_EX8TA TYPE TABLE OF ZEDU20_EX8TA WITH HEADER LINE,
+        LT_EX9TA TYPE TABLE OF ZEDU20_EX9TA WITH HEADER LINE.
+
+  DATA: LS_EX8TA TYPE ZEDU20_EX8TA,
+        LS_EX9TA TYPE ZEDU20_EX9TA.
+
+  LOOP AT GT_DISPLAY.
+    MOVE-CORRESPONDING GT_DISPLAY TO LT_EX8TA.
+
+    "생성/수정 데이터
+    SELECT SINGLE *
+      INTO LS_EX8TA
+      FROM ZEDU20_EX8TA
+     WHERE ZYEAR EQ LT_EX8TA-ZYEAR
+       AND SNO   EQ LT_EX8TA-SNO.
+    IF SY-SUBRC EQ 0.
+      LT_EX8TA-ERNAM = LS_EX8TA-ERNAM.
+      LT_EX8TA-ERDAT = LS_EX8TA-ERDAT.
+      LT_EX8TA-ERTIM = LS_EX8TA-ERTIM.
+      LT_EX8TA-AENAM = SY-UNAME.
+      LT_EX8TA-AEDAT = SY-DATUM.
+      LT_EX8TA-AETIM = SY-UZEIT.
+    ELSE.
+      LT_EX8TA-ERNAM = SY-UNAME.
+      LT_EX8TA-ERDAT = SY-DATUM.
+      LT_EX8TA-ERTIM = SY-UZEIT.
+      LT_EX8TA-AENAM = SY-UNAME.
+      LT_EX8TA-AEDAT = SY-DATUM.
+      LT_EX8TA-AETIM = SY-UZEIT.
+    ENDIF.
+    APPEND LT_EX8TA. CLEAR LT_EX8TA.
+
+    IF P_DISP IS INITIAL.
+      MOVE-CORRESPONDING GT_DISPLAY TO LT_EX9TA.
+      "생성/수정 데이터
+      LT_EX9TA-ERNAM = SY-UNAME.
+      LT_EX9TA-ERDAT = SY-DATUM.
+      LT_EX9TA-ERTIM = SY-UZEIT.
+      LT_EX9TA-AENAM = SY-UNAME.
+      LT_EX9TA-AEDAT = SY-DATUM.
+      LT_EX9TA-AETIM = SY-UZEIT.
+      APPEND LT_EX9TA. CLEAR LT_EX9TA.
+    ENDIF.
+    "조회모드에선 9, 10번 테이블이 바뀔 수가 없음.
+    "일반적으로 사용자들이 테이블을 수정할 땐
+    "모두 다 지우고 나서 다시 생성하게 해야함.
+    "그래서 수정, 생성 데이터를 똑같이 둠.
+  ENDLOOP.
+
+  MODIFY ZEDU20_EX8TA FROM TABLE LT_EX8TA.
+  IF SY-SUBRC NE 0.
+    GV_ERROR = 'X'.
+    ROLLBACK WORK.
+
+    MESSAGE S000 WITH TEXT-M04 DISPLAY LIKE 'E'.
+    EXIT.
+  ENDIF.
+
+
+  IF P_DISP IS INITIAL.
+    MODIFY ZEDU20_EX9TA FROM TABLE LT_EX9TA.
+    IF SY-SUBRC NE 0.
+      GV_ERROR = 'X'.
+      ROLLBACK WORK.
+
+      MESSAGE S000 WITH TEXT-M04 DISPLAY LIKE 'E'.
+      EXIT.
+    ENDIF.
+
+    LOOP AT GT_ZEDU20_EX10TA.
+      GT_ZEDU20_EX10TA-ERNAM = SY-UNAME.
+      GT_ZEDU20_EX10TA-ERDAT = SY-DATUM.
+      GT_ZEDU20_EX10TA-ERTIM = SY-UZEIT.
+      GT_ZEDU20_EX10TA-AENAM = SY-UNAME.
+      GT_ZEDU20_EX10TA-AEDAT = SY-DATUM.
+      GT_ZEDU20_EX10TA-AETIM = SY-UZEIT.
+
+      MODIFY GT_ZEDU20_EX10TA.
+    ENDLOOP.
+
+    MODIFY ZEDU20_EX10TA FROM TABLE GT_ZEDU20_EX10TA.
+    IF SY-SUBRC NE 0.
+      GV_ERROR = 'X'.
+      ROLLBACK WORK.
+
+      MESSAGE S000 WITH TEXT-M04 DISPLAY LIKE 'E'.
+      EXIT.
+    ENDIF.
+  ENDIF.
+
+  MESSAGE S005.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_INSTANCE_0300
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CREATE_INSTANCE_0300 .
+
+  CREATE OBJECT GR_CON3
+    EXPORTING
+      CONTAINER_NAME = GV_CONTAINER3. "USER가 정의한 CONTAINER
+
+  CREATE OBJECT GR_GRID3
+    EXPORTING
+      I_PARENT = GR_CON3.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_ALV_GRID_0300
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM DISPLAY_ALV_GRID_0300 .
+
+  GS_VARIANT-REPORT = SY-REPID.
+
+  GV_SAVE = 'A'.
+
+  "*-- Build field catalog for the alv control
+  CALL METHOD GR_GRID3->SET_TABLE_FOR_FIRST_DISPLAY
+    EXPORTING
+      I_DEFAULT                     = ABAP_TRUE
+      IS_LAYOUT                     = GS_LAYOUT
+      IS_VARIANT                    = GS_VARIANT
+      I_SAVE                        = GV_SAVE
+      IT_TOOLBAR_EXCLUDING          = GT_EXCLUDE
+    CHANGING
+      IT_FIELDCATALOG               = GT_FIELDCAT
+      IT_SORT                       = GT_SORT
+      IT_OUTTAB                     = GT_GRADE
+    EXCEPTIONS
+      INVALID_PARAMETER_COMBINATION = 1
+      PROGRAM_ERROR                 = 2
+      TOO_MANY_LINES                = 3.
+
+  IF SY-SUBRC NE 0.
+    MESSAGE E000(0K) WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form REFRESH_GRID_0300
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM REFRESH_GRID_0300 .
+
+  GS_STABLE-ROW = ABAP_TRUE. "Row
+  GS_STABLE-COL = ABAP_TRUE. "column
+
+  CALL METHOD GR_GRID3->REFRESH_TABLE_DISPLAY
+    EXPORTING
+      IS_STABLE      = GS_STABLE
+      I_SOFT_REFRESH = SPACE.
+
+  CALL METHOD CL_GUI_CFW=>FLUSH.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EVENT_USER_COMMAND
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> E_UCOMM
+*&      --> SENDER
+*&---------------------------------------------------------------------*
+FORM EVENT_USER_COMMAND   USING PV_UCOMM TYPE SY-UCOMM
+                               PR_SENDER TYPE REF TO CL_GUI_ALV_GRID.
+
+
+* - PREFIX 정의 - FORM PARAMETER
+*   1. PT_  : Internal Table or Ranges
+*   2. PS_  : Structure
+*   3. PV_  : Variables
+*   4. PR_  : Reference Variables
+
+  "GRID에 따라 처리.
+  CASE PR_SENDER.
+    WHEN GR_GRID1.
+      CASE PV_UCOMM.
+        WHEN '&ASEL'.   "-- 전체선택
+          CLEAR GT_DISPLAY.
+          LOOP AT GT_DISPLAY  WHERE CHECK IS INITIAL.
+            GT_DISPLAY-CHECK = 'X'.
+            MODIFY GT_DISPLAY[] FROM GT_DISPLAY.
+          ENDLOOP.
+          " REFRESH
+          PERFORM REFRESH_GRID_0100.
+
+        WHEN '&DSEL'.   "-- 전체선택해제
+          CLEAR GT_DISPLAY.
+          LOOP AT GT_DISPLAY WHERE CHECK IS NOT INITIAL.
+            CLEAR GT_DISPLAY-CHECK.
+            MODIFY GT_DISPLAY[] FROM GT_DISPLAY.
+          ENDLOOP.
+          " REFRESH
+          PERFORM REFRESH_GRID_0100.
+
+      ENDCASE.
+    WHEN OTHERS.
+  ENDCASE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EVENT_DOUBLE_CLICK
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> E_ROW
+*&      --> E_COLUMN
+*&      --> ES_ROW_NO
+*&      --> SENDER
+*&---------------------------------------------------------------------*
+FORM EVENT_DOUBLE_CLICK  USING PS_ROW TYPE LVC_S_ROW
+                              PS_COLUMN TYPE LVC_S_COL
+                              PS_ROW_NO TYPE LVC_S_ROID
+                              PR_SENDER TYPE REF TO CL_GUI_ALV_GRID.
+
+* - Prefix - Form Parameter
+*   1. PT_  : Internal Table or Ranges
+*   2. PS_  : Structure
+*   3. PV_  : Variables
+*   4. PR_ : Reference Variables
+
+
+  CASE PR_SENDER.
+    WHEN GR_GRID1.
+      CASE PS_COLUMN-FIELDNAME.
+        WHEN 'SNO'.
+
+          READ TABLE GT_DISPLAY  INDEX PS_ROW_NO-ROW_ID.
+          IF SY-SUBRC EQ 0.
+            IF P_DISP IS NOT INITIAL.
+              CLEAR: GT_GRADE, GS_GRADE.
+
+              SELECT A~ZYEAR, A~SNO, B~SNAME, A~TERM, A~GRADE, A~CREDIT
+                INTO CORRESPONDING FIELDS OF TABLE @GT_GRADE
+                FROM ZEDU20_EX10TA AS A
+                LEFT OUTER JOIN ZEDU20_EX8TA AS B
+                             ON B~ZYEAR EQ A~ZYEAR
+                            AND B~SNO   EQ A~SNO
+               WHERE A~ZYEAR EQ @GT_DISPLAY-ZYEAR
+                 AND A~SNO   EQ @GT_DISPLAY-SNO.
+            ELSE.
+              CLEAR: GT_GRADE, GS_GRADE.
+              LOOP AT GT_ZEDU20_EX10TA WHERE ZYEAR EQ GT_DISPLAY-ZYEAR
+                                         AND SNO   EQ GT_DISPLAY-SNO.
+
+                MOVE-CORRESPONDING GT_ZEDU20_EX10TA TO GS_GRADE.
+                GS_GRADE-SNAME = GT_DISPLAY-SNAME.
+                APPEND GS_GRADE TO GT_GRADE.
+                CLEAR GS_GRADE.
+              ENDLOOP.
+            ENDIF.
+
+            IF GT_GRADE[] IS INITIAL.
+              GV_ERROR = 'X'.
+              MESSAGE S001 DISPLAY LIKE 'E'.
+              EXIT.
+            ENDIF.
+
+            CALL SCREEN 300 STARTING AT 5 2.
+          ENDIF.
+
+      ENDCASE.
+  ENDCASE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EVENT_TOOLBAR
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> E_OBJECT
+*&      --> E_INTERACTIVE
+*&      --> SENDER
+*&---------------------------------------------------------------------*
+FORM EVENT_TOOLBAR  USING  PR_OBJECT TYPE REF TO CL_ALV_EVENT_TOOLBAR_SET
+                          PV_INTERACTIVE TYPE CHAR01
+                          PR_SENDER TYPE REF TO CL_GUI_ALV_GRID.
+
+* - Prefix #¤## - Form Parameter
+*   1. PT_  : Internal Table or Ranges
+*   2. PS_  : Structure
+*   3. PV_  : Variables
+*   4. PR_ : Reference Variables
+
+* - BUTTON TYPE - BTYPE.
+*  0 버튼(일반)
+*  1 메뉴 및 기본 버튼
+*  2 메뉴
+*  3 분리자
+*  4 라디오 버튼
+*  5 체크박스
+*  6 메뉴 엔트리
+
+  CASE PR_SENDER.
+    WHEN GR_GRID1.
+
+      "ADD_BUTTON : OBJECT, BTYPE, FUNC, ICON, INFO, TEXT, DISABLE
+      PERFORM ADD_BUTTON
+      USING: PR_OBJECT '3' SPACE SPACE SPACE SPACE SPACE,  "분리자
+
+      PR_OBJECT '0' '&ASEL' ICON_SELECT_ALL TEXT-BT1
+      TEXT-BT1 SPACE,
+
+      PR_OBJECT '0' '&DSEL' ICON_DESELECT_ALL TEXT-BT2
+      TEXT-BT2 SPACE.
+
+*      PR_OBJECT '0' '&DEL' ICON_DELETE_ROW TEXT-BT3
+*      TEXT-BT3 SPACE.
+
+    WHEN OTHERS.
+  ENDCASE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ADD_BUTTON
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> PR_OBJECT
+*&      --> P_
+*&      --> SPACE
+*&      --> SPACE
+*&      --> SPACE
+*&      --> SPACE
+*&      --> SPACE
+*&---------------------------------------------------------------------*
+FORM ADD_BUTTON  USING PR_OBJECT TYPE REF TO CL_ALV_EVENT_TOOLBAR_SET
+                       PV_BTYPE
+                       PV_FUNC
+                       PV_ICON
+                       PV_INFO
+                       PV_TEXT
+                       PV_DISA.
+
+  DATA: LS_BUTTON TYPE STB_BUTTON,
+        LS_BTNMNU TYPE STB_BTNMNU,
+
+        LT_BUTTON TYPE TTB_BUTTON,
+        LT_BTNMNU TYPE TTB_BTNMNU.
+
+  CLEAR LS_BUTTON.
+  LS_BUTTON-BUTN_TYPE = PV_BTYPE.
+  LS_BUTTON-FUNCTION = PV_FUNC.
+  LS_BUTTON-ICON = PV_ICON.
+  LS_BUTTON-QUICKINFO = PV_INFO.
+
+  LS_BUTTON-TEXT = PV_TEXT.
+  LS_BUTTON-DISABLED = PV_DISA.
+
+  APPEND LS_BUTTON TO PR_OBJECT->MT_TOOLBAR.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_GRID_EXCLUDE_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SET_GRID_EXCLUDE_0100 .
+
+  DATA: LS_EXCLUDE LIKE LINE OF GT_EXCLUDE.
+  REFRESH: GT_EXCLUDE.
+
+  "-- DEFINE _SET_EX
+  DEFINE _SET_EX.
+    CLEAR: LS_EXCLUDE.
+    LS_EXCLUDE = &1.
+    APPEND LS_EXCLUDE TO GT_EXCLUDE.
+  END-OF-DEFINITION.
+
+  _SET_EX:
+*   CL_GUI_ALV_GRID=>MC_FC_FIND,
+   CL_GUI_ALV_GRID=>MC_FC_SORT_ASC,
+   CL_GUI_ALV_GRID=>MC_FC_SORT_DSC,
+*   CL_GUI_ALV_GRID=>MC_MB_SUBTOT,
+*   CL_GUI_ALV_GRID=>MC_MB_SUM,
+*
+    CL_GUI_ALV_GRID=>MC_FC_LOC_COPY_ROW,
+    CL_GUI_ALV_GRID=>MC_FC_LOC_APPEND_ROW,
+    CL_GUI_ALV_GRID=>MC_FC_LOC_INSERT_ROW,
+    CL_GUI_ALV_GRID=>MC_FC_LOC_MOVE_ROW,
+*    CL_GUI_ALV_GRID=>MC_FC_LOC_DELETE_ROW,
+    CL_GUI_ALV_GRID=>MC_FC_LOC_COPY,
+    CL_GUI_ALV_GRID=>MC_FC_LOC_CUT,
+    CL_GUI_ALV_GRID=>MC_FC_LOC_PASTE,
+    CL_GUI_ALV_GRID=>MC_FC_LOC_PASTE_NEW_ROW,
+    CL_GUI_ALV_GRID=>MC_FC_LOC_UNDO,
+    CL_GUI_ALV_GRID=>MC_FC_CHECK,
+
+*   CL_GUI_ALV_GRID=>MC_FC_DETAIL,
+*   CL_GUI_ALV_GRID=>MC_FC_FILTER,
+    CL_GUI_ALV_GRID=>MC_FC_GRAPH,
+*    CL_GUI_ALV_GRID=>MC_FC_HTML,
+    CL_GUI_ALV_GRID=>MC_FC_INFO,
+    CL_GUI_ALV_GRID=>MC_FC_REFRESH,
+
+*   CL_GUI_ALV_GRID=>MC_FC_VIEWS,
+*   CL_GUI_ALV_GRID=>MC_FC_LOAD_VARIANT,
+*   CL_GUI_ALV_GRID=>MC_FC_PRINT,
+*   CL_GUI_ALV_GRID=>MC_MB_VARIANT,
+*   CL_GUI_ALV_GRID=>MC_MB_EXPORT,
+
+    CL_GUI_ALV_GRID=>MC_FC_VIEW_CRYSTAL,
+    CL_GUI_ALV_GRID=>MC_FC_VIEW_EXCEL,
+    CL_GUI_ALV_GRID=>MC_FC_VIEW_GRID,
+    CL_GUI_ALV_GRID=>MC_FC_VIEW_LOTUS,
+    CL_GUI_ALV_GRID=>MC_FC_EXPCRDATA,
+    CL_GUI_ALV_GRID=>MC_FC_EXPCRDESIG,
+    CL_GUI_ALV_GRID=>MC_FC_EXPCRTEMPL,
+    CL_GUI_ALV_GRID=>MC_FC_CALL_ABC,
+    CL_GUI_ALV_GRID=>MC_FC_CALL_CRBATCH.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form REGIST_ALV_EVENT_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> GR_GRID1
+*&---------------------------------------------------------------------*
+FORM REGIST_ALV_EVENT_0100  USING PR_GRID TYPE REF TO CL_GUI_ALV_GRID.
+
+* REGISTER EVENT
+  CALL METHOD PR_GRID->REGISTER_EDIT_EVENT
+  "이벤트를 등록한다. 실제로 그리드가 받음.
+    EXPORTING
+      I_EVENT_ID = CL_GUI_ALV_GRID=>MC_EVT_MODIFIED.
+  "이벤트를 받는 공간이 생김.
+  "
+*  CALL METHOD PR_GRID->SET_READY_FOR_INPUT
+*    EXPORTING
+*      I_READY_FOR_INPUT = 1.
+
+*-- GR_EVENT_RECEIVER
+  IF GR_EVENT_RECEIVER IS INITIAL.
+    CREATE OBJECT GR_EVENT_RECEIVER.
+    "우리가 만든 이벤트 리시버 생성됨, 그리드, 컨테이너같은 개념. 이벤트를 받아주는 곳.
+  ENDIF.
+
+* Handler Event
+  SET HANDLER:
+    GR_EVENT_RECEIVER->HANDLE_TOOLBAR   FOR ALL INSTANCES,
+*    GR_EVENT_RECEIVER->HANDLE_DATA_CHANGED  FOR ALL INSTANCES,
+*    GR_EVENT_RECEIVER->HANDLE_DATA_CHANGED_FINISHED
+*      FOR ALL INSTANCES,
+    GR_EVENT_RECEIVER->HANDLE_USER_COMMAND  FOR ALL INSTANCES,
+*    GR_EVENT_RECEIVER->HANDLE_HOTSPOT_CLICK FOR ALL INSTANCES,
+    GR_EVENT_RECEIVER->HANDLE_DOUBLE_CLICK  FOR ALL INSTANCES.
+*    GR_EVENT_RECEIVER->HANDLE_ONF4          FOR ALL INSTANCES.
+
+*  PERFORM REGI_F4.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form INIT_LAYOUT_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM INIT_LAYOUT_0100 .
+
+*GS_LAYOUT-EDIT_MODE  = ABAP_TRUE. "편집모드
+  GS_LAYOUT-ZEBRA      = ABAP_TRUE.  "줄무늬를 줌. 얼룩말
+*  GS_LAYOUT-CWIDTH_OPT = ABAP_TRUE.  "최적화, 필드캣이랑 똑같음.
+*  GS_LAYOUT-SEL_MODE   = 'A'.     "B:단일,C:복수,D:셀,A:행/열
+*                                                  "B를 주면 단일라인씩 선택 가능
+*                                                  "C 복수라인 선택가능, 스크롤
+* "                  D 한 셀단위로 선택 가능. 박스버튼이 생기고  라인을 선택하는 기능 생성
+*                      "A 행과열 생김.
+*  GS_LAYOUT-NO_ROWMARK = SPACE. "한줄 선택 없애주는 기능.
+* "SEL모드랑 로우마크랑 연관이 있음,
+*
+*  GS_LAYOUT-KEYHOT = 'X'. "키 필드 누를 수 있음
+*  GS_LAYOUT-NO_HEADERS = SPACE. "페이지 245
+  GS_LAYOUT-INFO_FNAME = 'LCOLOR'.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CALL_SMARTFORMS
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CALL_SMARTFORMS .
+
+
+* SMARTFORM 출력 변수
+  DATA : LV_FM_NAME     TYPE RS38L_FNAM,
+         LS_CONTROL     TYPE SSFCTRLOP, "Smart Forms Control Structure
+         LS_OPTIONS     TYPE SSFCOMPOP, "Smart Forms Composer Options
+         LS_OUTPUT      TYPE SSFCRESOP, "Smart Forms Return Value.
+         LV_USERSETTING TYPE TDBOOL.    "Yes or No.
+
+  DATA: LR_ERROR   TYPE REF TO CX_SY_SQL_ERROR,
+        LV_MESSAGE TYPE STRING.
+
+  DATA: LS_SFDATA LIKE ZEDU20_SF01ST.
+
+  CLEAR : GV_SMART_FORM, GV_FORMNAME.
+
+* 스마트폼 이름
+  GV_SMART_FORM = 'ZEDU20_SF01'.  "스마트폼 이름
+
+* 스마트폼 이름 가져오기(펑션명)
+  PERFORM GET_SMART_FORM_NAME USING GV_SMART_FORM
+                              CHANGING GV_FORMNAME.
+
+* 스마트폼 옵션
+  LS_CONTROL-PREVIEW    = 'X'.
+
+  READ TABLE GT_DISPLAY  WITH KEY CHECK = 'X'.
+  LS_SFDATA-SNO = GT_DISPLAY-SNO.
+  LS_SFDATA-SNAME = GT_DISPLAY-SNAME.
+  LS_SFDATA-ADDR = GT_DISPLAY-ADDR.
+  LS_SFDATA-MNAME = GT_DISPLAY-MNAME.
+
+  CALL FUNCTION GV_FORMNAME
+    EXPORTING
+      CONTROL_PARAMETERS = LS_CONTROL
+      OUTPUT_OPTIONS     = LS_OPTIONS
+      USER_SETTINGS      = ' '
+      IS_SF01ST          = LS_SFDATA
+    IMPORTING
+      JOB_OUTPUT_OPTIONS = LS_OUTPUT
+    EXCEPTIONS
+      FORMATTING_ERROR   = 1
+      INTERNALV_ERROR    = 2
+      SEND_ERROR         = 3
+      USER_CANCELED      = 4
+      OTHERS             = 5.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHECK_SEL
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CHECK_SEL .
+
+  DATA: LV_CNT TYPE N.
+
+  LOOP AT GT_DISPLAY  WHERE CHECK EQ 'X'.
+    IF LV_CNT  > 1.
+      EXIT.
+    ENDIF.
+
+    LV_CNT = LV_CNT + 1.
+
+  ENDLOOP.
+
+  IF LV_CNT EQ 0.
+    GV_ERROR = 'X'.
+    MESSAGE S000 WITH TEXT-M06 DISPLAY LIKE 'E'.
+
+  ELSEIF LV_CNT > 1.
+    GV_ERROR = 'X'.
+    MESSAGE S000 WITH TEXT-M07 DISPLAY LIKE 'E'.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_SMART_FORM_NAME
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> GV_SMART_FORM
+*&      <-- GV_FORMNAME
+*&---------------------------------------------------------------------*
+FORM GET_SMART_FORM_NAME USING P_FORMNAME
+                         CHANGING P_FUNCTON_NAME.
+
+  CALL FUNCTION 'SSF_FUNCTION_MODULE_NAME'
+    EXPORTING
+      FORMNAME           = P_FORMNAME
+    IMPORTING
+      FM_NAME            = P_FUNCTON_NAME
+    EXCEPTIONS
+      NO_FORM            = 1
+      NO_FUNCTION_MODULE = 2
+      OTHERS             = 3.
+
+  IF SY-SUBRC <> 0.
+    MESSAGE ID SY-MSGID TYPE 'E' NUMBER SY-MSGNO
+    WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+  ENDIF.
+ENDFORM.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

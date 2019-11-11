@@ -1,0 +1,18 @@
+*&---------------------------------------------------------------------*
+*& Include          ZEDU20_25TOP
+*&---------------------------------------------------------------------*
+
+TABLES ZEDU20_EX4TA.
+
+DATA: GV_CNT TYPE I.
+DATA: GV_ERROR TYPE C.
+
+DATA : GS_DATA LIKE ZEDU20_EX4TA,
+           GT_DATA LIKE TABLE OF ZEDU20_EX4TA.
+
+" bdc upload internal table
+DATA: GT_BDCDATA LIKE TABLE OF BDCDATA WITH HEADER LINE,
+         GT_MESSAGE LIKE TABLE OF BDCMSGCOLL WITH HEADER LINE.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

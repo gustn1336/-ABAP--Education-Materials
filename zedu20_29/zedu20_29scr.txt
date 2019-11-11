@@ -1,0 +1,13 @@
+*&---------------------------------------------------------------------*
+*& Include          ZEDU20_29SCR
+*&---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF BLOCK BL1 WITH FRAME TITLE TEXT-001.
+  PARAMETERS: P_CARRID LIKE SFLIGHT-CARRID OBLIGATORY. "필수로 입력해야 하는 값.
+  SELECT-OPTIONS S_CONNID FOR SFLIGHT-CONNID.
+  SELECT-OPTIONS S_FLDATE FOR SFLIGHT-FLDATE NO-EXTENSION.
+
+ SELECTION-SCREEN END OF BLOCK BL1.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

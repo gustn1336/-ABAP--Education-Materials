@@ -1,0 +1,17 @@
+*&---------------------------------------------------------------------*
+*& Include          ZEDU20_25SCR
+*&---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF BLOCK BL1 WITH FRAME TITLE TEXT-001.
+  PARAMETERS: P_YEAR LIKE ZEDU20_EX5TA-ZYEAR OBLIGATORY. "필수로 입력해야 하는 값.
+  SELECT-OPTIONS S_IMDATE FOR ZEDU20_EX5TA-IMDATE NO-EXTENSION.
+
+  PARAMETERS: P_FILE TYPE RLGRAP-FILENAME OBLIGATORY DEFAULT 'C:\'.
+ SELECTION-SCREEN END OF BLOCK BL1.
+
+SELECTION-SCREEN BEGIN OF BLOCK BL2 WITH FRAME TITLE TEXT-002.
+  PARAMETERS: P_DISP AS CHECKBOX.
+ SELECTION-SCREEN END OF BLOCK BL2.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753
