@@ -1,0 +1,24 @@
+*----------------------------------------------------------------------*
+***INCLUDE ZEDU20_06_WRITE_DATAF01.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form WRITE_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> GS_DATA
+*&      --> GT_DATA
+*&---------------------------------------------------------------------*
+FORM WRITE_DATA  USING    VALUE(PS_DATA) STRUCTURE GS_DATA
+                                             VALUE(PT_DATA) LIKE GT_DATA.
+          DATA: LS_DATA LIKE GS_DATA.
+
+          LOOP AT PT_DATA INTO LS_DATA.
+            WRITE : / LS_DATA-VAL1, LS_DATA-VAL2.
+            ENDLOOP.
+
+            WRITE: / PS_DATA-VAL1, PS_DATA-VAL2.
+ENDFORM.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

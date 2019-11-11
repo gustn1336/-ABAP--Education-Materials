@@ -1,0 +1,35 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_17
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_17.
+
+DATA: GT_SFLIGHT TYPE STANDARD TABLE OF SFLIGHT,
+          GS_SFLIGHT TYPE SFLIGHT,
+          GT_SCARR TYPE TABLE OF SCARR,
+          GS_SCARR TYPE SCARR.
+
+SUBMIT ZEDU20_18 AND RETURN.
+
+IMPORT ABAP_MEMORY TO GT_SFLIGHT FROM MEMORY ID 'CTAB'.
+IMPORT ABAP_MEMORY TO GT_SCARR FROM MEMORY ID 'CTAB2'.
+FREE MEMORY ID 'CTAB'.
+FREE MEMORY ID 'CTAB2'.
+*MEMORY ID는 메모리의 ID, ABAP_MEMORY는 CTAB가 들고 오는 변수값.
+*ABAP_MEMORY와 CTAB는 같은 쌍이라고 봐도 됨.
+*ABAP_MEMORY는 타입을 정해주지 않아도 FROM에 있는 형을 그대로 데리고 옴.
+*FREE MEMORY는 메모리를 풀어주는 것.
+
+LOOP AT GT_SFLIGHT INTO GS_SFLIGHT FROM 1 TO 5.
+  WRITE: /,5(4) SY-TABIX, GS_SFLIGHT-CARRID, GS_SFLIGHT-CONNID.
+ENDLOOP.
+
+LOOP AT GT_SCARR INTO GS_SCARR FROM 1 TO 5.
+  WRITE: /,5(4) SY-TABIX,  GS_SCARR-CARRID, GS_SCARR-CARRNAME.
+ENDLOOP.
+
+*테이블을 누르면 바로 가는 이유가 모두 ABAP메모리에서 기억을 하고 있기 때문.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

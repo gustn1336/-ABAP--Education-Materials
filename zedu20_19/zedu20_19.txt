@@ -1,0 +1,17 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_19
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_19.
+
+DATA: GT_SCARR TYPE STANDARD TABLE OF SCARR.
+
+SELECT *
+  INTO CORRESPONDING FIELDS OF TABLE GT_SCARR
+  FROM SCARR.
+
+  EXPORT ABAP_MEMORY FROM GT_SCARR TO MEMORY ID 'CTAB2'.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

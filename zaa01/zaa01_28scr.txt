@@ -1,0 +1,20 @@
+*&---------------------------------------------------------------------*
+*& Include          ZAA01_28SCR
+*&---------------------------------------------------------------------*
+
+SELECTION-SCREEN: BEGIN OF BLOCK BL1 WITH FRAME TITLE TEXT-001.
+
+PARAMETERS:  P_DISP RADIOBUTTON GROUP RADI DEFAULT'X' USER-COMMAND UCOMM.
+PARAMETERS: P_DISP2 RADIOBUTTON GROUP RADI.
+SELECTION-SCREEN: END OF BLOCK BL1.
+
+SELECTION-SCREEN BEGIN OF BLOCK BL2 WITH FRAME TITLE TEXT-002.
+SELECT-OPTIONS:
+          S_KTOPL FOR SKA1-KTOPL DEFAULT 'INT' NO-EXTENSION
+                                                                                      NO INTERVALS MODIF ID MD1,
+          S_BUKRS   FOR SKB1-BUKRS NO-EXTENSION  NO INTERVALS MODIF ID MD2,
+          S_SAKNR FOR SKA1-SAKNR MODIF ID MD3.
+SELECTION-SCREEN END OF BLOCK BL2.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

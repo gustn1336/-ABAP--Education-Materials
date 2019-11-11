@@ -1,0 +1,76 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_10
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_10.
+
+Data: GV_VAR TYPE C VALUE 'A'.
+FIELD-SYMBOLS: <FS> TYPE ANY.
+
+
+ASSIGN GV_VAR TO <FS>.
+
+<FS> = 'B'.
+
+WRITE: 'GV_VAR iS' , GV_VAR.
+
+CLEAR: GV_VAR.
+
+GV_VAR = 'C'.
+
+WRITE: /, '<FS> IS', <FS>.
+
+" Var Assign
+*------------------------------------
+
+DATA: BEGIN OF GS_DATA,
+             VAR1 TYPE I,
+             VAR2 TYPE I,
+             VAR3 TYPE I,
+           END OF GS_DATA,
+           GT_DATA LIKE TABLE OF GS_DATA.
+
+      FIELD-SYMBOLS: <FS_STRUC> LIKE GS_DATA,
+                                  <FS_TAB> TYPE ANY TABLE.
+*테이블을 담을때 테이블이라고 선언을 해줘야함. TYPE ANY TABLE.
+
+      CLEAR: GS_DATA.
+      GS_DATA-VAR1 = 10.
+      GS_DATA-VAR2 = 20.
+      GS_DATA-VAR3 = 30.
+
+      ASSIGN GS_DATA TO <FS_STRUC>.
+      GS_DATA-VAR3 = 40.
+      WRITE:   /,  <FS_STRUC>-VAR3.
+*   두개 동시에 변경됨. 같은 주소(메모링)를 참조하고 있기 때문.
+
+      CLEAR GS_DATA.
+      GS_DATA-VAR1 = 10.
+      GS_DATA-VAR2 = 20.
+      GS_DATA-VAR3 = 30.
+      APPEND GS_DATA TO GT_DATA.
+
+      CLEAR GS_DATA.
+      GS_DATA-VAR1 = 40.
+      GS_DATA-VAR2 = 50.
+      GS_DATA-VAR3 = 60.
+      APPEND GS_DATA TO GT_DATA.
+
+      ASSIGN GT_DATA TO <FS_TAB>.
+
+      IF <FS_STRUC> IS ASSIGNED.
+*        CLEAR <FS_STRUC>. GS_DATA도 같이 클리어 됨.
+        UNASSIGN <FS_STRUC>.
+        ENDIF.
+
+      LOOP AT  <FS_TAB> ASSIGNING <FS_STRUC>.
+        WRITE:/ <FS_STRUC>-VAR1, <FS_STRUC>-VAR2, <FS_STRUC>-VAR3.
+      ENDLOOP.
+
+* 일반 스트럭쳐랑 비슷하게 스트럭쳐에 넣어서 출력할 수 있음.
+
+*필드 심볼을 쓰는 이유.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

@@ -1,0 +1,67 @@
+*&---------------------------------------------------------------------*
+*& Include          ZAA01_28TOP
+*&---------------------------------------------------------------------*
+
+TABLES : SKA1, SKB1, SKAT, CSKA, CSKB,DD07T .
+
+DATA : GV_FLAG TYPE C,
+       OK_CODE TYPE SY-UCOMM,
+       SAVE_OK TYPE SY-UCOMM.
+
+DATA: BEGIN OF GS_DATA,
+        KTOPL          LIKE SKA1-KTOPL,
+        BUKRS          LIKE SKB1-BUKRS,
+        SAKNR          LIKE SKA1-SAKNR,
+        TXT20          LIKE SKAT-TXT20,
+        TXT50          LIKE SKAT-TXT50,
+        GLACCOUNT_TYPE LIKE SKA1-GLACCOUNT_TYPE,
+        KTOKS          LIKE SKA1-KTOKS,
+        XBILK          LIKE SKA1-XBILK,
+        GVTYP          LIKE SKA1-GVTYP,
+        FUNC_AREA      LIKE SKA1-FUNC_AREA,
+        VBUND          LIKE SKA1-VBUND,
+        BILKT          LIKE SKA1-BILKT,
+      END OF GS_DATA.
+
+DATA :GT_DATA LIKE TABLE OF GS_DATA.
+
+DATA: BEGIN OF GS_DATA2,
+        KTOPL     LIKE   SKA1-KTOPL,
+        BUKRS     LIKE   SKB1-BUKRS,
+        SAKNR     LIKE   SKA1-SAKNR,
+        TXT20     LIKE   SKAT-TXT20,
+        TXT50     LIKE   SKAT-TXT50,
+        KTOKS     LIKE SKA1-KTOKS,
+        XBILK     LIKE SKA1-XBILK,
+        GVTYP     LIKE SKA1-GVTYP,
+        FUNC_AREA LIKE SKA1-FUNC_AREA,
+        VBUND     LIKE SKA1-VBUND,
+        BILKT     LIKE SKA1-BILKT,
+        WAERS     LIKE SKB1-WAERS,
+        XSALH     LIKE SKB1-XSALH,
+        KDFSL     LIKE  SKB1-KDFSL,
+        MWSKZ     LIKE SKB1-MWSKZ,
+        XMWNO     LIKE SKB1-XMWNO,
+        MITKZ     LIKE SKB1-MITKZ,
+        ALTKT     LIKE SKB1-ALTKT,
+        XOPVW     LIKE SKB1-XOPVW,
+        XKRES     LIKE SKB1-XKRES,
+        ZUAWA     LIKE SKB1-ZUAWA,
+        FSTAG     LIKE SKB1-FSTAG,
+        XINTB     LIKE SKB1-XINTB,
+        XNKON     LIKE SKB1-XNKON,
+        XMITK     LIKE SKB1-XMITK,
+        FDLEV     LIKE SKB1-FDLEV,
+        XGKON     LIKE SKB1-XGKON,
+        HBKID     LIKE SKB1-HBKID,
+        HKTID     LIKE SKB1-HKTID,
+        KSTAR     LIKE CSKA-KSTAR,
+        "                KTEXT TYPE CSKA-KTEXT,
+        KATYP     LIKE CSKB-KATYP,
+        DOMNAME   LIKE DD07T-DOMNAME,
+      END OF GS_DATA2.
+
+DATA : GT_DATA2 LIKE TABLE OF GS_DATA2.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

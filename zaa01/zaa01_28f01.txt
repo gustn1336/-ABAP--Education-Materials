@@ -1,0 +1,427 @@
+*&---------------------------------------------------------------------*
+*& Include          ZAA01_28F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form INT
+*&---------------------------------------------------------------------*
+FORM INT .
+  P_DISP = 'X'.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form MODIFY_SCREEN
+*&---------------------------------------------------------------------*
+FORM MODIFY_SCREEN .
+
+  LOOP AT SCREEN.
+
+    IF P_DISP EQ ABAP_TRUE.
+      REFRESH S_BUKRS.
+      CASE  SCREEN-GROUP1.
+        WHEN 'MD1'.
+          SCREEN-INPUT = '1'.
+          SCREEN-REQUIRED = '1'.
+        WHEN 'MD2'.
+          SCREEN-INPUT = '0'.
+          SCREEN-REQUIRED = '0'.
+        WHEN OTHERS.
+      ENDCASE.
+
+      MODIFY SCREEN.
+
+    ELSEIF P_DISP2 EQ ABAP_TRUE.
+      REFRESH S_BUKRS.
+      CASE  SCREEN-GROUP1.
+        WHEN 'MD1'.
+          SCREEN-INPUT = '1'.
+          SCREEN-REQUIRED = '0'.
+        WHEN 'MD2'.
+          SCREEN-INPUT = '1'.
+          SCREEN-REQUIRED = '1'.
+
+        WHEN OTHERS.
+      ENDCASE.
+
+      MODIFY SCREEN.
+
+    ENDIF.
+  ENDLOOP.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SELECT_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+FORM SELECT_DATA .
+
+  DATA: LT_DD07V TYPE TABLE OF DD07V WITH HEADER LINE.
+
+  IF GV_FLAG = 'X'.
+
+    "계정과목표 전체 리스트 조회
+    SELECT
+       A1~KTOPL
+       B1~BUKRS
+       A1~SAKNR
+       AT~TXT20
+       AT~TXT50
+       A1~GLACCOUNT_TYPE
+       A1~KTOKS
+       A1~XBILK
+       A1~GVTYP
+       A1~FUNC_AREA
+       A1~VBUND
+       A1~BILKT
+     INTO CORRESPONDING FIELDS OF TABLE GT_DATA
+     FROM SKA1 AS A1 INNER JOIN SKB1 AS B1
+     ON A1~SAKNR = B1~SAKNR
+     INNER JOIN SKAT AS AT
+    ON B1~SAKNR = AT~SAKNR
+    AND AT~SPRAS = SY-LANGU
+    WHERE A1~KTOPL IN S_KTOPL
+      AND  B1~BUKRS IN  S_BUKRS
+      AND B1~SAKNR   IN S_SAKNR.
+
+  ELSE.
+    "회사코드별 계정과목 전체 리스트 조회
+    SELECT
+    A1~KTOPL
+    B1~BUKRS
+    A1~SAKNR
+    AT~TXT20
+    AT~TXT50
+    A1~KTOKS
+    A1~XBILK
+    A1~GVTYP
+    A1~FUNC_AREA
+    A1~VBUND
+    A1~BILKT
+    B1~WAERS
+    B1~XSALH
+    B1~KDFSL
+    B1~MWSKZ
+    B1~XMWNO
+    B1~MITKZ
+    B1~ALTKT
+    B1~XOPVW
+    B1~XKRES
+    B1~ZUAWA
+    B1~FSTAG
+    B1~XINTB
+    B1~XNKON
+    B1~XMITK
+    B1~FDLEV
+    B1~XGKON
+    B1~HBKID
+    B1~HKTID
+    KA~KSTAR
+    KB~KATYP
+     INTO CORRESPONDING FIELDS OF TABLE GT_DATA2
+     FROM SKA1 AS A1 INNER JOIN SKB1 AS B1
+     ON A1~SAKNR = B1~SAKNR
+     INNER JOIN SKAT AS AT
+     ON A1~SAKNR = AT~SAKNR
+     AND AT~SPRAS = SY-LANGU
+     INNER JOIN CSKA AS KA
+     ON A1~KTOPL = KA~KTOPL
+     AND AT~KTOPL = KA~KTOPL
+     INNER JOIN CSKB AS KB
+     ON KA~KSTAR = KB~KSTAR
+   AND KB~DATAB >= '2000.02.02'
+     WHERE A1~KTOPL IN S_KTOPL
+     AND B1~BUKRS IN S_BUKRS
+     AND B1~SAKNR IN S_SAKNR.
+
+    " Get Domain Value
+    CALL FUNCTION 'DD_DOMVALUES_GET'
+      EXPORTING
+        DOMNAME        = 'KATYP'
+        TEXT           = 'X'
+        LANGU          = SY-LANGU
+      TABLES
+        DD07V_TAB      = LT_DD07V
+      EXCEPTIONS
+        WRONG_TEXTFLAG = 1
+        OTHERS         = 2.
+
+    LOOP AT GT_DATA2 INTO GS_DATA2.
+      READ TABLE LT_DD07V WITH KEY DOMVALUE_L = GS_DATA2-KATYP.
+      IF SY-SUBRC EQ 0.
+        GS_DATA2-DOMNAME = LT_DD07V-DDTEXT.
+      ENDIF.
+
+      MODIFY GT_DATA2 FROM GS_DATA2.
+
+    ENDLOOP.
+
+
+  ENDIF.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_INSTANCE_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+FORM CREATE_INSTANCE_0100 .
+
+  CREATE OBJECT GR_CON1
+    EXPORTING
+      CONTAINER_NAME = GV_CONTAINER.
+
+  CREATE OBJECT GR_GRID1
+    EXPORTING
+      I_PARENT = GR_CON1.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form APPEND_FIELDCAT_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+FORM APPEND_FIELDCAT_0100 .
+
+  DATA: LV_DYNNR TYPE SY-DYNNR.
+  LV_DYNNR = SY-DYNNR. "알아서 현재 화면번호를 넘겨줌
+
+  PERFORM GET_FIELDCATLOG_DATA USING LV_DYNNR.
+
+  PERFORM MODIFY_FIELDCATLOG_DATA.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_FIELDCATLOG_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> LV_DYNNR
+*&---------------------------------------------------------------------*
+FORM GET_FIELDCATLOG_DATA  USING    P_LV_DYNNR.
+  DATA: LT_FIELDCAT TYPE KKBLO_T_FIELDCAT.
+  DATA: LV_TABNAME  TYPE DD02L-TABNAME.
+
+  IF P_DISP = 'X'.
+    LV_TABNAME = 'GS_DATA'.
+  ELSEIF P_DISP2 = 'X'.
+    LV_TABNAME = 'GS_DATA2'.
+  ENDIF.
+
+  CALL FUNCTION 'K_KKB_FIELDCAT_MERGE'
+    EXPORTING
+      I_CALLBACK_PROGRAM     = SY-REPID
+      I_TABNAME              = LV_TABNAME "프로그램내 ITAB
+*     I_STRUCNAME            = 'ZEDU00_EX5ST_1' "ABAP DIC. 정의된 STRUCTURE
+      I_BYPASSING_BUFFER     = ABAP_TRUE
+      I_INCLNAME             = SY-REPID
+    CHANGING
+      CT_FIELDCAT            = LT_FIELDCAT[]
+    EXCEPTIONS
+      INCONSISTENT_INTERFACE = 1
+      OTHERS                 = 2.
+
+  IF SY-SUBRC EQ 0.
+
+    "-- Trasnfer LVC.
+    CALL FUNCTION 'LVC_TRANSFER_FROM_KKBLO'
+      EXPORTING
+        IT_FIELDCAT_KKBLO = LT_FIELDCAT[]
+      IMPORTING
+        ET_FIELDCAT_LVC   = GT_FIELDCAT[]
+      EXCEPTIONS
+        IT_DATA_MISSING   = 1.
+  ELSE.
+
+    " Error Fieldcatalog merge!!
+    MESSAGE 'Error ' TYPE 'I'.
+
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form MODIFY_FIELDCATLOG_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+FORM MODIFY_FIELDCATLOG_DATA .
+  DATA:  LV_TEXT(50).
+
+  LOOP AT GT_FIELDCAT INTO GS_FIELDCAT.
+    CLEAR: LV_TEXT.
+
+    CASE GS_FIELDCAT-FIELDNAME.
+      WHEN 'KTOPL'.
+        LV_TEXT = '계정과목표'.
+        GS_FIELDCAT-KEY = 'X'. "안움직이고 스크롤 고정하게  키 값 지정.
+      WHEN 'BUKRS '.
+        LV_TEXT = '회사코드'.
+        GS_FIELDCAT-KEY = 'X'.
+      WHEN 'SAKNR'.
+        LV_TEXT = 'GL계정'.
+        GS_FIELDCAT-KEY = 'X'.
+      WHEN 'TXT20'.
+        LV_TEXT = '내역'.
+      WHEN 'TXT50'.
+        LV_TEXT = '설명'.
+      WHEN 'GLACCOUNT_TYPE'.
+        LV_TEXT = '계정유형'.
+      WHEN 'KTOKS'.
+        LV_TEXT = '계정그룹'.
+      WHEN 'XBILK'.
+        LV_TEXT = '대차대조표 계정'.
+      WHEN 'GVTYP'.
+        LV_TEXT = '손익계산서 계정'.
+      WHEN 'FUNC_AREA'.
+        LV_TEXT = '기능영역'.
+      WHEN 'VBUND'.
+        LV_TEXT = '관계사'.
+      WHEN 'BILKT'.
+        LV_TEXT = '그룹계정번호'.
+      WHEN 'WAERS'.
+        LV_TEXT = '계정통화'.
+      WHEN 'XSALH'.
+        LV_TEXT = '잔액(현지통화)'.
+      WHEN 'KDFSL'.
+        LV_TEXT = '환율차이키'.
+      WHEN 'MWSKZ'.
+        LV_TEXT = '세금범주'.
+      WHEN 'XMWNO'.
+        LV_TEXT = '세금없이 전기허용'.
+      WHEN 'MITKZ'.
+        LV_TEXT = '조정계정'.
+      WHEN 'ALTKT'.
+        LV_TEXT = '대체계정'.
+      WHEN 'XOPVW'.
+        LV_TEXT = '미결항목 관리'.
+      WHEN 'XKRES'.
+        LV_TEXT = '개별항목 조회'.
+      WHEN 'ZUAWA'.
+        LV_TEXT = '정렬 키'.
+      WHEN 'FSTAG'.
+        LV_TEXT = '필드상태 그룹'.
+      WHEN 'XINTB'.
+        LV_TEXT = '자동정기만'.
+      WHEN 'XNKON'.
+        LV_TEXT = '자동전기보충'.
+      WHEN 'XMITK'.
+        LV_TEXT = '조정계정입력가능'.
+      WHEN 'FDLEV'.
+        LV_TEXT = '계획레벨'.
+      WHEN 'XGKON'.
+        LV_TEXT = '현금흐름관련'.
+      WHEN 'HBKID'.
+        LV_TEXT = '거래은행'.
+      WHEN 'HKTID'.
+        LV_TEXT = '계정ID'.
+      WHEN 'KSTAR'.
+        LV_TEXT = '원가요소'.
+      WHEN 'KATYP'.
+        LV_TEXT = '원가요소범주'.
+      WHEN 'DOMNAME'.
+        LV_TEXT = '원가요소범주이름'.
+
+
+
+
+      WHEN OTHERS.
+        GS_FIELDCAT-NO_OUT = ABAP_TRUE.
+    ENDCASE.
+    "Column Optimizer
+    GS_FIELDCAT-COL_OPT = ABAP_TRUE.
+
+    "-- Common attribute
+    IF LV_TEXT IS NOT INITIAL.
+      GS_FIELDCAT-COLTEXT   = LV_TEXT.
+      GS_FIELDCAT-SCRTEXT_L = LV_TEXT.
+      GS_FIELDCAT-SCRTEXT_M = LV_TEXT.
+      GS_FIELDCAT-SCRTEXT_S = LV_TEXT.
+    ENDIF.
+
+    MODIFY GT_FIELDCAT FROM GS_FIELDCAT.
+  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_ALV_GRID_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+FORM DISPLAY_ALV_GRID_0100 .
+
+  GS_VARIANT-REPORT = SY-REPID.
+
+  GV_SAVE = 'A'.
+
+
+  IF P_DISP = 'X'.
+    "*-- Build field catalog for the alv control
+    CALL METHOD GR_GRID1->SET_TABLE_FOR_FIRST_DISPLAY
+      EXPORTING
+        I_DEFAULT                     = ABAP_TRUE
+        IS_LAYOUT                     = GS_LAYOUT
+        IS_VARIANT                    = GS_VARIANT
+        I_SAVE                        = GV_SAVE
+        IT_TOOLBAR_EXCLUDING          = GT_EXCLUDE
+      CHANGING
+        IT_FIELDCATALOG               = GT_FIELDCAT
+        IT_SORT                       = GT_SORT
+        IT_OUTTAB                     = GT_DATA
+      EXCEPTIONS
+        INVALID_PARAMETER_COMBINATION = 1
+        PROGRAM_ERROR                 = 2
+        TOO_MANY_LINES                = 3.
+
+    IF SY-SUBRC NE 0.
+      MESSAGE E000(0K) WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+    ENDIF.
+
+  ELSEIF P_DISP2 = 'X'.
+
+    "*-- Build field catalog for the alv control
+    CALL METHOD GR_GRID1->SET_TABLE_FOR_FIRST_DISPLAY
+      EXPORTING
+        I_DEFAULT                     = ABAP_TRUE
+        IS_LAYOUT                     = GS_LAYOUT
+        IS_VARIANT                    = GS_VARIANT
+        I_SAVE                        = GV_SAVE
+        IT_TOOLBAR_EXCLUDING          = GT_EXCLUDE
+      CHANGING
+        IT_FIELDCATALOG               = GT_FIELDCAT
+        IT_SORT                       = GT_SORT
+        IT_OUTTAB                     = GT_DATA2
+      EXCEPTIONS
+        INVALID_PARAMETER_COMBINATION = 1
+        PROGRAM_ERROR                 = 2
+        TOO_MANY_LINES                = 3.
+
+    IF SY-SUBRC NE 0.
+      MESSAGE E000(0K) WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+    ENDIF.
+
+  ENDIF.
+
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form REFRESH_GRID_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+FORM REFRESH_GRID_0100 .
+
+  GS_STABLE-ROW = ABAP_TRUE. "Row
+  GS_STABLE-COL = ABAP_TRUE. "column
+
+  CALL METHOD GR_GRID1->REFRESH_TABLE_DISPLAY
+    EXPORTING
+      IS_STABLE      = GS_STABLE
+      I_SOFT_REFRESH = SPACE.
+
+  CALL METHOD CL_GUI_CFW=>FLUSH.
+
+ENDFORM.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

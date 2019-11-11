@@ -1,0 +1,19 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_18
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_18.
+
+DATA: GT_SFLIGHT2 TYPE STANDARD TABLE OF SFLIGHT.
+
+SELECT *
+  INTO CORRESPONDING FIELDS OF TABLE GT_SFLIGHT2
+  FROM SFLIGHT.
+
+  EXPORT ABAP_MEMORY FROM GT_SFLIGHT2 TO MEMORY ID 'CTAB'.
+
+  SUBMIT ZEDU20_19 AND RETURN.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

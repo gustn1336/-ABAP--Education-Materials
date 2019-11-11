@@ -1,0 +1,31 @@
+*&---------------------------------------------------------------------*
+*& Include          ZEDU20_05F01
+*&---------------------------------------------------------------------*
+
+DATA: gv_val1 TYPE I,
+          gv_val2 TYPE I,
+          gv_SUM TYPE I.
+
+GV_VAL1 = 5.
+GV_VAL2 = 3.
+
+
+WRITE : / GV_VAL1, GV_VAL2.
+
+******** CALL BY VALUE
+*PERFORM SUM_DATA USING GV_VAL1 GV_VAL2
+*                                  CHANGING GV_SUM.
+
+* CALL BY REFERNCE
+PERFORM SUM_DATA2 USING GV_VAL1 GV_VAL2
+                                  CHANGING GV_SUM.
+
+
+WRITE:   GV_VAL1, GV_VAL2, (16)GV_SUM.
+
+INCLUDE zedu20_05_sum_dataf01.
+
+INCLUDE zedu20_05_sum_data2f01.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

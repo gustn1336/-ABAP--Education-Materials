@@ -1,0 +1,35 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_06
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_06.
+
+DATA: BEGIN OF gs_data,
+              VAL1 TYPE I,
+              VAL2 TYPE I,
+           End OF gs_data,
+           GT_DATA LIKE TABLE OF  GS_DATA.
+
+           CLEAR: GS_DATA.
+           GS_DATA-VAL1 = 1.
+           GS_DATA-VAL2 = 2.
+           APPEND GS_DATA TO GT_DATA.
+
+
+           CLEAR: GS_DATA.
+           GS_DATA-VAL1 = 3.
+           GS_DATA-VAL2 = 4.
+           APPEND GS_DATA TO GT_DATA.
+
+           CLEAR: GS_DATA.
+           GS_DATA-VAL1 = 5.
+           GS_DATA-VAL2 = 6.
+
+
+           PERFORM WRITE_DATA USING GS_DATA GT_DATA.
+
+INCLUDE zedu20_06_write_dataf01.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

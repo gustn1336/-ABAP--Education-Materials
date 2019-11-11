@@ -1,0 +1,47 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_03
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_03.
+
+DATA: BEGIN OF GS_DATA,
+        CARRID   LIKE SFLIGHT-CARRID,
+        CONNID   LIKE SFLIGHT-CONNID,
+        SEATSMAX LIKE SFLIGHT-SEATSMAX,
+      END OF GS_DATA.
+DATA: GT_DATA  LIKE TABLE OF GS_DATA.
+
+DATA: GS_DATA2 LIKE GS_DATA,
+      GT_DATA2 LIKE TABLE OF GS_DATA.
+
+SELECT *
+INTO CORRESPONDING FIELDS OF TABLE GT_DATA
+FROM SFLIGHT
+WHERE CARRID EQ 'AA'
+AND  CONNID EQ '0017'
+AND FLDATE >= '20190531'.
+
+LOOP AT GT_DATA INTO GS_DATA.
+*  MOVE-CORRESPONDING GS_DATA TO GS_DATA2.
+*  GS_DATA2-CARRID = GS_DATA-CARRID.
+*  GS_DATA2-CONNID = GS_DATA-CONNID.
+
+  APPEND GS_DATA2 TO GT_DATA2.
+ENDLOOP.
+
+MOVE GT_DATA[] TO GT_DATA2[].
+*GT_DATA2[] = GT_DATA[].
+
+WRITE: 'GT_DATA', /.
+LOOP AT GT_DATA INTO GS_DATA.
+  WRITE: (8)GS_DATA-CARRID, (12)GS_DATA-CONNID, (15)GS_DATA-SEATSMAX, /.
+ENDLOOP.
+
+WRITE: 'GT_DATA2', /.
+LOOP AT GT_DATA2 INTO GS_DATA2.
+  WRITE: (8)GS_DATA2-CARRID, (12)GS_DATA2-CONNID, (15)GS_DATA2-SEATSMAX, /.
+ENDLOOP.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

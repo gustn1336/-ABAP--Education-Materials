@@ -1,0 +1,76 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_11
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_11.
+
+DATA: GV_VAL1 TYPE C VALUE 'A',
+          GV_VAL2 TYPE C VALUE 'B',
+          GV_VAL3 TYPE C VALUE 'C',
+          GV_VAL4 TYPE C VALUE 'D',
+          GV_VAL5 TYPE C VALUE 'E'.
+
+
+
+DATA: GV_FNAME TYPE CHAR20,
+           GV_INDEX TYPE N.
+
+FIELD-SYMBOLS <FS>.
+
+DO 5 TIMES.
+CLEAR: GV_FNAME.
+GV_INDEX = SY-INDEX.
+CONCATENATE 'GV_VAL' GV_INDEX INTO GV_FNAME.
+ASSIGN (GV_FNAME) TO <FS>.
+WRITE: /, GV_FNAME, ':', <FS>.
+ENDDO.
+
+* ()는 메모리 주소를 참조하라는 말.
+WRITE: /.
+
+DATA: BEGIN OF GS_DATA,
+           VAR1 TYPE TEXT10,
+           VAR2 TYPE TEXT10,
+           VAR3 TYPE TEXT10,
+          END OF GS_DATA,
+          GT_DATA LIKE TABLE OF GS_DATA.
+
+FIELD-SYMBOLS: <FS_STRC> LIKE GS_DATA,
+                            <FS2>.
+
+CLEAR: GS_DATA.
+GS_DATA-VAR1 = '10'.
+GS_DATA-VAR2 = '20'.
+GS_DATA-VAR3 = '30'.
+APPEND GS_DATA TO GT_DATA.
+
+CLEAR: GS_DATA.
+GS_DATA-VAR1 = '40'.
+GS_DATA-VAR2 = '50'.
+GS_DATA-VAR3 = '60'.
+APPEND GS_DATA TO GT_DATA.
+
+LOOP AT GT_DATA ASSIGNING <FS_STRC>.
+  DO 3 TIMES.
+    ASSIGN COMPONENT SY-INDEX OF STRUCTURE <FS_STRC> TO <FS2>.
+    WRITE: <FS2>.
+  ENDDO.
+  WRITE: /.
+ENDLOOP.
+
+LOOP AT GT_DATA INTO GS_DATA.
+  DO 3 TIMES.
+   CLEAR GV_FNAME.
+    GV_INDEX = SY-INDEX.
+    CONCATENATE 'GS_DATA-VAR' GV_INDEX  INTO GV_FNAME.
+    ASSIGN (GV_FNAME) TO <FS2>.
+    WRITE: <FS2>.
+  ENDDO.
+  WRITE: /.
+ENDLOOP.
+
+*하나의 필드값을 가져올 때 COMPONENT를 사용함. 실무에선 인덱스값을 넣어서 쓰지는 않음.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

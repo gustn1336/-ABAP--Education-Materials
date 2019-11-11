@@ -1,0 +1,56 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_20
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_20.
+
+TABLES: SFLIGHT. "내가 이 테이블을 쓰겠다고 선언하는 것. 외부에서 만든 테이블만 가능. 인터널 테이블은 불가능.
+                             " 스트럭쳐로 사용할 수 있음.
+
+DATA: LV_CARRID TYPE SFLIGHT-CARRID, "LIKE는 선언한 것만 사용할 수 있음.
+           LV_CONNID TYPE SFLIGHT-CONNID.
+
+DATA: BEGIN OF GS_FLIGHT,
+          CARRID LIKE SFLIGHT-CARRID,
+          CONNID LIKE SFLIGHT-CONNID,
+          SEATMAX LIKE SFLIGHT-SEATSMAX, " TBALES로 선언했기 때문에 LIKE를 쓸 수 있음.
+          END OF GS_FLIGHT,
+
+         GT_FLIGHT LIKE GS_FLIGHT OCCURS 0, " OCCURS을 넣으면서 테이블이 되는 것.
+          GT_FLIGHT2 LIKE TABLE OF GS_FLIGHT WITH HEADER LINE. "똑같은 테이블.
+
+SELECTION-SCREEN BEGIN OF BLOCK BL1 WITH FRAME TITLE TEXT-001. "하나로 묶어주는 기능
+ PARAMETERS: P_CARRID LIKE SFLIGHT-CARRID. "파라미터는 하나의 값만 넣을때 P로 시작함.
+ SELECT-OPTIONS: S_CONNID FOR SFLIGHT-CONNID. "FOR라는 것을 썼음. 스트럭처가 이미 정의가 되어 있어야 함.
+                                                                                      "다중값을 입력할 때 씀.
+ SELECTION-SCREEN END OF BLOCK BL1.
+
+ SELECTION-SCREEN BEGIN OF BLOCK BL2 WITH FRAME TITLE TEXT-002.
+ PARAMETERS: P_CARR2 LIKE SFLIGHT-CARRID.
+ SELECT-OPTIONS: S_CONN2 FOR SFLIGHT-CONNID.  "변수명은 8글자까지 서치헬프도 같이 들고옴 *
+                                                                                 "탐색도움말이 들어있기 때문에 그대로 가져다 쓸 수 있음.
+
+ PARAMETERS: P_1 DEFAULT 'A', "타입을 선언 안하면 타입C 랭스 1로 설정됨.
+ P_2 TYPE TEXT10,
+ P_3 LIKE SFLIGHT-CARRID, "서치헬프까지 같이 들고옴.
+ P_4 TYPE C LENGTH 3 DEFAULT '123',
+ P_5 TYPE P DECIMALS 2 DEFAULT '123.45678', "소수점 있는 정수형, DECIMAL은 소수점 자리 수. 뒤에 짜르고 반올림해서 가져옴. ''써야함.
+                                                                       "문자 들어갈 때 오른쪽으로 붙어서 들어감.
+ P_6 LIKE SFLIGHT-CARRID VALUE CHECK,         "나중에 설명.
+ P_7 LIKE SFLIGHT-CARRID AS LISTBOX VISIBLE LENGTH 5, "서치헬프에 있는 애들이 나옴.
+ P_8 NO-DISPLAY,
+ P_9 OBLIGATORY, "필수필드, 실행하기 위해선 꼭 입력해야함.
+ P_10 AS CHECKBOX,
+ P_11 RADIOBUTTON GROUP RADI,
+ P_12 RADIOBUTTON GROUP RADI, " 그룹을 지정하지 않으면 따로 놈.
+ P_13 AS CHECKBOX USER-COMMAND ABC, " 유저 커멘드는 일반 필드에도 사용할 수 있음. 값이 바뀔때 마다 체크를 함. 화면에 변화가 생길때 체크.
+ P_14(10) VISIBLE LENGTH 3 DEFAULT '1234567'. "10짜리 C형. 비쥬얼 랭스가 먼저 나옴.
+ SELECTION-SCREEN END OF BLOCK BL2.
+
+WRITE: text-001. "블록을 지워야 나옴.
+
+* BEGIN OF BLOCK  BL1 블록설정  WITH FRAME 프레임 설정 TITLE TEXT-001 제목 설정
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

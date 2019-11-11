@@ -1,0 +1,47 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_02
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_02.
+
+DATA: BEGIN OF GS_DATA,
+        CARRID   LIKE SFLIGHT-CARRID,
+        CONNID   LIKE SFLIGHT-CONNID,
+        SEATSMAX LIKE SFLIGHT-SEATSMAX,
+      END OF  GS_DATA.
+
+DATA: GT_DATA  LIKE TABLE OF GS_DATA,
+      GT_DATA2 LIKE TABLE OF GS_DATA WITH HEADER LINE.
+
+SELECT *
+  INTO CORRESPONDING FIELDS OF TABLE GT_DATA
+  FROM SFLIGHT
+  WHERE CARRID LIKE  'A%'.
+
+READ TABLE GT_DATA INTO GS_DATA WITH KEY CARRID = 'AZ'.
+
+WRITE: 'READ TABLE', /.
+
+WRITE: (8) GS_DATA-CARRID, (12)GS_DATA-CONNID, (15) GS_DATA-SEATSMAX, /.
+
+CLEAR GS_DATA.
+
+
+READ TABLE GT_DATA INTO GS_DATA WITH KEY CARRID = 'AZ' TRANSPORTING CARRID CONNID.
+
+WRITE: 'READ TABLE', /.
+
+WRITE: (8) GS_DATA-CARRID, (12)GS_DATA-CONNID, (15) GS_DATA-SEATSMAX, /.
+
+
+CLEAR GS_DATA.
+
+READ TABLE GT_DATA INTO GS_DATA INDEX 6.
+
+WRITE: 'READ TABLE', /.
+
+WRITE: (8) GS_DATA-CARRID, (12)GS_DATA-CONNID, (15) GS_DATA-SEATSMAX, /.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753

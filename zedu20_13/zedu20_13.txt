@@ -1,0 +1,121 @@
+*&---------------------------------------------------------------------*
+*& Report ZEDU20_13
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZEDU20_13.
+
+DATA GV_STR TYPE c LENGTH 20.
+GV_STR = '하위^^_바위^^'.
+
+CALL FUNCTION 'STRING_REPLACE'
+  EXPORTING
+    PATTERN                   = '_'
+    SUBSTITUTE                = '-'
+*   MAX_REPLACES              = 0  최대 몇개까지 바꿔주냐
+* IMPORTING
+*   NUMBER_OF_REPLACES        = 몇개가 바뀌었는지.
+*MAX부터 NUMBER 옵션값들
+  CHANGING
+    TEXT                      = GV_STR
+* EXCEPTIONS - 예외처리, 에러에 대한 것.
+*   WRONG_STRING_LENGTH       = 1
+*   OTHERS                    = 2
+          .
+IF SY-SUBRC <> 0.
+*0이면 정상, 아니면 에러. 에러시 추가 작업시 여기 코딩.
+* Implement suitable error handling here
+ENDIF.
+
+WRITE: GV_STR.
+*-------------------------------------------
+*CHANGING은 EXPORT INPORT 둘다 가능함.
+
+
+DATA: GV_AMT TYPE DEC15_4, "콤마와 부호를 가지는 타입.
+"DMBTR. "금액을 다루는 타입. 부호를 넣지 못함.
+         GV_SAMT TYPE C LENGTH 20.
+GV_AMT = 900.
+GV_AMT = GV_AMT * -1.
+
+WRITE GV_AMT TO GV_SAMT CURRENCY 'KRW'.
+CONDENSE GV_SAMT NO-GAPS.
+*WRITE는 금액을 문자형으로 바꾸는 것.
+* CONDENSE - 공백제거.
+
+CALL FUNCTION 'CLOI_PUT_SIGN_IN_FRONT'
+  CHANGING
+    VALUE         = GV_SAMT.
+
+WRITE: /, GV_SAMT.
+*------------------------------------------------
+DATA: GV_FDATE TYPE DATS, "SY-DATUM,
+          GV_DAYS   TYPE VTBBEWE-ATAGE, "타입은 INT4
+          GV_MONTHS TYPE VTBBEWE-ATAGE,
+          GV_YEARS  TYPE VTBBEWE-ATAGE.
+GV_FDATE = '20180101'.
+
+CALL FUNCTION 'FIMA_DAYS_AND_MONTHS_AND_YEARS'
+  EXPORTING
+    I_DATE_FROM          = GV_FDATE
+    I_DATE_TO            = SY-DATUM
+ IMPORTING
+   E_DAYS               =     GV_DAYS
+   E_MONTHS             =  GV_MONTHS
+   E_YEARS              =    GV_YEARS.
+
+
+
+  WRITE: /, GV_DAYS, GV_MONTHS, GV_YEARS.
+* 일수 계산
+
+*--------------------------------------------
+
+*RP_LAST_DAY_OF_MONTHS 말일 계산하는 펑션
+*DATE_COMPUTE_DAY 요일 알려주는 펑션
+
+*--------------------------------------
+DATA: GT_FIELDCAT TYPE LVC_T_FCAT.
+DATA: BEGIN OF GT_DATA OCCURS 0,
+        AMT01 TYPE ZEDU00_EX3TA-MON01,
+        AMT03 TYPE ZEDU00_EX3TA-MON02,
+        AMT04 TYPE ZEDU00_EX3TA-MON03,
+      END OF GT_DATA.
+
+CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
+  EXPORTING
+*   I_BUFFER_ACTIVE        =
+    I_STRUCTURE_NAME       = 'ZEDU00_EX3TA'
+*    I_STRUCTURE_NAME       = 'GT_DATA'
+*   I_CLIENT_NEVER_DISPLAY = 'X'
+*   I_BYPASSING_BUFFER     =
+*   I_INTERNAL_TABNAME     =
+  CHANGING
+    CT_FIELDCAT            = GT_FIELDCAT
+  EXCEPTIONS
+    INCONSISTENT_INTERFACE = 1
+    PROGRAM_ERROR          = 2
+    OTHERS                 = 3.
+LOOP AT GT_FIELDCAT INTO DATA(GS_FIELDCAT).
+
+ENDLOOP.
+      "라인오브는 인터널 테이블을 참조해서 스트럭처를 만들때
+*테이블의 필드를 알 수 있음.
+
+*---------------------------------------------
+DATA: GV_CALC_DATE TYPE DATS.
+
+    CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+      EXPORTING
+        date      = SY-DATUM
+        days      = 99 "두자리까지만
+        months    = 00
+        signum    = '+' "전으로 할건지 앞으로 할건지
+        years     =   00
+      IMPORTING
+        calc_date = GV_CALC_DATE.
+
+    WRITE: /, GV_CALC_DATE.
+
+-----------------------------------------------------------
+Extracted by Mass Download version1.5.2 - E.G.Mellodew. 1998-2019. Sap Release753
